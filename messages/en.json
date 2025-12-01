@@ -2,7 +2,19 @@
   "nav": {
     "bookSpace": "Book a Space",
     "backToHome": "Back to Home",
-    "close": "CLOSE"
+    "close": "CLOSE",
+    "exhibition": "Exhibition",
+    "currentExhibition": "Current",
+    "pastExhibition": "Past",
+    "upcomingExhibition": "Upcoming",
+    "aboutUs": "About Us",
+    "galleryIntro": "Gallery Introduction",
+    "location": "Location",
+    "artist": "Artist",
+    "artistList": "Artists",
+    "contact": "Contact",
+    "rentalInfo": "Rental Information",
+    "purchaseInquiry": "Purchase Inquiry"
   },
   "home": {
     "subtitle": "Premium Gallery Rental",

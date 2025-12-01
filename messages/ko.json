@@ -2,7 +2,19 @@
   "nav": {
     "bookSpace": "공간 예약하기",
     "backToHome": "홈으로 돌아가기",
-    "close": "닫기"
+    "close": "닫기",
+    "exhibition": "Exhibition",
+    "currentExhibition": "현재 전시",
+    "pastExhibition": "지난 전시",
+    "upcomingExhibition": "예정 전시",
+    "aboutUs": "About Us",
+    "galleryIntro": "갤러리 소개",
+    "location": "오시는 길",
+    "artist": "Artist",
+    "artistList": "작가 소개",
+    "contact": "Contact",
+    "rentalInfo": "대관 안내",
+    "purchaseInquiry": "작품 구매 문의"
   },
   "home": {
     "subtitle": "프리미엄 갤러리 대관",

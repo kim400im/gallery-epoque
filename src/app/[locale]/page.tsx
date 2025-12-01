@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useRef } from 'react';
-import Link from 'next/link';
+import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, ContactShadows, Environment, MeshTransmissionMaterial } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import { ArrowRight, Menu } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import * as THREE from 'three';
-import LanguageSwitcher from '../components/LanguageSwitcher';
+import { Link } from '@/i18n/navigation';
+import Navigation from '../components/Navigation';
 
 // --- 3D Components ---
 
@@ -57,8 +57,6 @@ function Scene() {
 
 export default function GalleryLanding() {
   const t = useTranslations();
-  const locale = useLocale();
-  const bookPath = locale === 'ko' ? '/book' : `/${locale}/book`;
 
   return (
     <div className="w-full h-screen bg-[#111311] relative overflow-hidden">
@@ -71,18 +69,7 @@ export default function GalleryLanding() {
       </div>
 
       {/* 네비게이션 */}
-      <nav className="absolute top-0 left-0 w-full p-8 flex justify-between items-center z-10 text-[#f8f4e3]">
-        <div className="text-2xl font-serif font-bold tracking-widest uppercase text-[#7c8d4c]">
-          Gallery Epoque
-        </div>
-        <div className="flex items-center gap-8 font-light text-sm hidden md:flex tracking-wider">
-          <LanguageSwitcher />
-          <Link href={bookPath} className="px-6 py-2 border border-[#7c8d4c]/50 text-[#7c8d4c] rounded-full hover:bg-[#7c8d4c] hover:text-[#f8f4e3] transition-all">
-            {t('nav.bookSpace')}
-          </Link>
-        </div>
-        <Menu className="md:hidden w-6 h-6" />
-      </nav>
+      <Navigation />
 
       {/* 메인 콘텐츠 */}
       <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center px-8 md:px-24 pointer-events-none z-10">
@@ -100,8 +87,7 @@ export default function GalleryLanding() {
           </h1>
           
           <div className="pointer-events-auto inline-block">
-              {/* Link를 사용하여 /book 페이지로 이동 */}
-              <Link href={bookPath}>
+              <Link href="/book">
                 <button className="group flex items-center gap-4 bg-[#7c8d4c] text-[#f8f4e3] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#6a7a40] transition-all shadow-[0_0_25px_rgba(124,141,76,0.3)]">
                     {t('home.cta')}
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
