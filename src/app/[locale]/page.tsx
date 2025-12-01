@@ -1,59 +1,13 @@
 "use client";
 
-import { useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, ContactShadows, Environment, MeshTransmissionMaterial } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import * as THREE from 'three';
 import { Link } from '@/i18n/navigation';
 import Navigation from '../components/Navigation';
 
-// --- 3D Components ---
-
-function AbstractArt({ position, scale, color, speed, roughness = 0.1, transmission = 0.95 }: {
-  position: [number, number, number];
-  scale: number;
-  color: string;
-  speed: number;
-  roughness?: number;
-  transmission?: number;
-}) {
-  const mesh = useRef<THREE.Mesh>(null);
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-    if(mesh.current) {
-        mesh.current.rotation.x = t * speed;
-        mesh.current.rotation.y = t * speed * 0.5;
-    }
-  });
-  return (
-    <Float speed={2} rotationIntensity={1.5} floatIntensity={2}>
-      <mesh ref={mesh} position={position} scale={scale}>
-        <icosahedronGeometry args={[1, 0]} />
-        <MeshTransmissionMaterial backside backsideThickness={5} thickness={2} roughness={roughness} transmission={transmission} ior={1.5} chromaticAberration={0.3} color={color} background={new THREE.Color('#111311')} />
-      </mesh>
-    </Float>
-  );
-}
-
-function Scene() {
-  return (
-    <>
-      <ambientLight intensity={0.4} color="#fff0e0" />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1.5} color="#ffecd1" castShadow />
-      <spotLight position={[-10, -10, -5]} angle={0.2} penumbra={1} intensity={0.5} color="#ffd7a8" />
-      <group position={[0, 0, 0]}>
-        <AbstractArt position={[2, 0, 0]} scale={1.2} color="#f2eadd" speed={0.2} roughness={0.05} />
-        <AbstractArt position={[-2.5, 1, -1]} scale={0.8} color="#d4af37" speed={0.15} transmission={0.6} roughness={0.2} /> 
-        <AbstractArt position={[0, -2, 1]} scale={0.5} color="#4a5d23" speed={0.3} transmission={0.8} />
-      </group>
-      <ContactShadows resolution={1024} scale={20} blur={3} opacity={0.4} far={10} color="#1a1410" />
-      <Environment preset="lobby" />
-    </>
-  );
-}
+// 3D Scene - 시안 2: Particle Wave
+import ParticleWave from '../components/three/Scene2_ParticleWave';
 
 export default function GalleryLanding() {
   const t = useTranslations();
@@ -62,10 +16,7 @@ export default function GalleryLanding() {
     <div className="w-full h-screen bg-[#111311] relative overflow-hidden">
       {/* 3D 배경 */}
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 1, 9], fov: 45 }}>
-          <color attach="background" args={['#111311']} />
-          <Scene />
-        </Canvas>
+        <ParticleWave />
       </div>
 
       {/* 네비게이션 */}
