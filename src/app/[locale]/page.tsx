@@ -232,8 +232,8 @@ export default function GalleryLanding() {
             Gallery Époque
           </div>
           <div className="text-[#ccc5b9] text-sm text-center md:text-right">
-            <p>서울특별시 강남구 청담동 123-45</p>
-            <p className="mt-1">Tel. 02-1234-5678 | contact@gallery-epoque.com</p>
+            <p>서울특별시 종로구 삼청로 123-1</p>
+            <p className="mt-1">Tel. 02-723-3420 | galleryepoque@naver.com</p>
           </div>
         </div>
         <div className="mt-8 text-center text-[#7c8d4c]/50 text-xs">
