@@ -81,9 +81,8 @@ export default function GalleryLanding() {
           <h2 className="text-[#ccc5b9] text-lg md:text-xl font-light tracking-[0.3em] mb-4 uppercase">
             {t('home.subtitle')}
           </h2>
-          <h1 className="text-5xl md:text-8xl font-serif text-[#f8f4e3] leading-tight mb-8 drop-shadow-xl">
-            {t('home.title')} <br />
-            <span className="italic text-[#d4af37]">{t('home.titleHighlight')}</span>
+          <h1 className="text-5xl md:text-8xl font-[var(--font-cormorant)] font-light text-[#7c8d4c] leading-tight mb-8 drop-shadow-xl">
+            {t('home.title')} {t('home.titleHighlight')}
           </h1>
           
           <div className="pointer-events-auto inline-block">
