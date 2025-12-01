@@ -1,0 +1,41 @@
+{
+  "nav": {
+    "bookSpace": "Book a Space",
+    "backToHome": "Back to Home",
+    "close": "CLOSE"
+  },
+  "home": {
+    "subtitle": "Premium Gallery Rental",
+    "title": "Space for",
+    "titleHighlight": "Masterpieces.",
+    "cta": "Start Exhibition"
+  },
+  "booking": {
+    "pageTitle": "Reserve Space",
+    "pageSubtitle": "Book a space for your exhibition.",
+    "heading1": "Curate",
+    "heading2": "Your",
+    "heading3": "Moment.",
+    "description": "A space where your art shines, Lumière Gallery.\nPlease provide details for the best exhibition experience.",
+    "copyright": "© 2024 Lumière Gallery Seoul",
+    "form": {
+      "name": "Full Name",
+      "namePlaceholder": "Ex. Kim Minji",
+      "phone": "Phone Number",
+      "phonePlaceholder": "010-0000-0000",
+      "email": "Email Address",
+      "emailPlaceholder": "artist@example.com",
+      "date": "Preferred Date",
+      "message": "Exhibition Concept",
+      "messagePlaceholder": "Please describe your exhibition theme or special requests.",
+      "submit": "Confirm Reservation"
+    },
+    "success": {
+      "title": "Request Received",
+      "message1": "Dear",
+      "message2": "Your reservation request has been successfully received.",
+      "message3": "Our curator will contact you within 24 hours.",
+      "returnLink": "Return to Gallery"
+    }
+  }
+}
