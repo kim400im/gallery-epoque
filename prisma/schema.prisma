@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 전시회 모델
+model Exhibition {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  startDate DateTime @default(now())
+  endDate   DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
