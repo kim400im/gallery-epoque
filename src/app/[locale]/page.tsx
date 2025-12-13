@@ -6,9 +6,42 @@ import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Navigation from '../components/Navigation';
+import HeroSlider, { SlideData, TransitionEffect } from '../components/HeroSlider';
 
-// 3D Scene - 시안 2: Particle Wave
-import ParticleWave from '../components/three/Scene2_ParticleWave';
+// 목업 슬라이드 데이터 (나중에 API 데이터로 교체 가능)
+const mockSlides: SlideData[] = [
+  {
+    id: '1',
+    title: 'Eternal Reflections',
+    subtitle: 'Solo Exhibition',
+    imageUrl: 'https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=1920&q=80',
+    date: '2024.12.01 - 2025.01.15',
+  },
+  {
+    id: '2',
+    title: 'Abstract Horizons',
+    subtitle: 'Group Exhibition',
+    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1920&q=80',
+    date: '2025.01.20 - 2025.02.28',
+  },
+  {
+    id: '3',
+    title: 'Light & Shadow',
+    subtitle: 'Photography Exhibition',
+    imageUrl: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1920&q=80',
+    date: '2025.03.01 - 2025.04.15',
+  },
+  {
+    id: '4',
+    title: 'Contemporary Visions',
+    subtitle: 'New Media Art',
+    imageUrl: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=1920&q=80',
+    date: '2025.04.20 - 2025.05.30',
+  },
+];
+
+// 슬라이더 효과 설정 (여기서 변경 가능: 'slide' | 'fade' | 'zoom')
+const SLIDER_EFFECT: TransitionEffect = 'fade';
 
 type Exhibition = {
   id: string
@@ -178,17 +211,24 @@ export default function GalleryLanding() {
 
   return (
     <div className="w-full bg-[#111311]">
-      {/* 히어로 섹션 */}
+      {/* 히어로 섹션 - 이미지 슬라이더 */}
       <div className="h-screen relative overflow-hidden">
-        {/* 3D 배경 */}
+        {/* 슬라이더 배경 */}
         <div className="absolute inset-0 z-0">
-          <ParticleWave />
+          <HeroSlider 
+            slides={mockSlides} 
+            effect={SLIDER_EFFECT}
+            autoPlay={true}
+            interval={5000}
+            showArrows={true}
+            showDots={true}
+          />
         </div>
 
         {/* 네비게이션 */}
         <Navigation />
 
-        {/* 메인 콘텐츠 */}
+        {/* 메인 콘텐츠 - 갤러리 타이틀 */}
         <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center px-8 md:px-24 pointer-events-none z-10">
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -198,8 +238,8 @@ export default function GalleryLanding() {
             <h2 className="text-[#ccc5b9] text-lg md:text-xl font-light tracking-[0.3em] mb-4 uppercase">
               {t('home.subtitle')}
             </h2>
-            <h1 className="text-5xl md:text-8xl font-[var(--font-cormorant)] font-light text-[#7c8d4c] leading-tight mb-8 drop-shadow-xl">
-              {t('home.title')} {t('home.titleHighlight')}
+            <h1 className="text-5xl md:text-8xl font-[var(--font-cormorant)] font-light text-[#f8f4e3] leading-tight mb-8 drop-shadow-xl">
+              <span className="text-[#7c8d4c]">{t('home.title')}</span> {t('home.titleHighlight')}
             </h1>
             
             <div className="pointer-events-auto inline-block">
@@ -213,16 +253,13 @@ export default function GalleryLanding() {
           </motion.div>
         </div>
 
-        {/* 그라디언트 오버레이 */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#111311]/90 via-transparent to-transparent pointer-events-none z-0" />
-
         {/* 스크롤 인디케이터 */}
         <motion.div 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30"
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <ChevronDown className="w-8 h-8 text-[#7c8d4c]" />
+          <ChevronDown className="w-8 h-8 text-[#d4af37]" />
         </motion.div>
       </div>
 
