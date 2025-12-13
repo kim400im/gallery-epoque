@@ -8,13 +8,35 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// 작가 모델
+model Artist {
+  id          String       @id @default(cuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  exhibitions Exhibition[]
+}
+
 // 전시회 모델
 model Exhibition {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   title     String
-  imageUrl  String
-  startDate DateTime @default(now())
-  endDate   DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  imageUrl  String            // 대표 이미지
+  startDate DateTime          @default(now())
+  endDate   DateTime          @default(now())
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  artistId  String?
+  artist    Artist?           @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  images    ExhibitionImage[]
+}
+
+// 전시회 추가 이미지 모델
+model ExhibitionImage {
+  id           String     @id @default(cuid())
+  imageUrl     String
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+  exhibitionId String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
 }

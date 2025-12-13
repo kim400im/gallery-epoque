@@ -24,7 +24,13 @@ function createSupabaseClient(request: NextRequest) {
 export async function GET() {
   try {
     const exhibitions = await prisma.exhibition.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        artist: true,
+        images: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
     })
     return NextResponse.json(exhibitions)
   } catch (error) {
@@ -34,6 +40,34 @@ export async function GET() {
       { status: 500 }
     )
   }
+}
+
+// 이미지 업로드 헬퍼 함수
+async function uploadImage(supabase: ReturnType<typeof createSupabaseClient>, image: File, folder: string): Promise<string> {
+  const arrayBuffer = await image.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+
+  const fileExt = image.name.split('.').pop()
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+  const filePath = `${folder}/${fileName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('gallery')
+    .upload(filePath, buffer, {
+      contentType: image.type,
+      cacheControl: '3600',
+      upsert: false
+    })
+
+  if (uploadError) {
+    throw new Error(`Failed to upload image: ${uploadError.message}`)
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('gallery')
+    .getPublicUrl(filePath)
+
+  return publicUrl
 }
 
 // POST: 전시회 등록
@@ -55,6 +89,8 @@ export async function POST(request: NextRequest) {
     const startDate = formData.get('startDate') as string
     const endDate = formData.get('endDate') as string
     const image = formData.get('image') as File
+    const artistId = formData.get('artistId') as string | null
+    const additionalImages = formData.getAll('additionalImages') as File[]
 
     if (!title || !image || !startDate || !endDate) {
       return NextResponse.json(
@@ -63,51 +99,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // File을 ArrayBuffer로 변환
-    const arrayBuffer = await image.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // 이미지를 Supabase Storage에 업로드
-    const fileExt = image.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-    const filePath = `exhibitions/${fileName}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('gallery')
-      .upload(filePath, buffer, {
-        contentType: image.type,
-        cacheControl: '3600',
-        upsert: false
-      })
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      return NextResponse.json(
-        { error: `Failed to upload image: ${uploadError.message}` },
-        { status: 500 }
-      )
-    }
-
-    // 이미지 public URL 가져오기
-    const { data: { publicUrl } } = supabase.storage
-      .from('gallery')
-      .getPublicUrl(filePath)
+    // 대표 이미지 업로드
+    const imageUrl = await uploadImage(supabase, image, 'exhibitions')
 
     // DB에 전시회 저장
     const exhibition = await prisma.exhibition.create({
       data: {
         title,
-        imageUrl: publicUrl,
+        imageUrl,
         startDate: new Date(startDate),
-        endDate: new Date(endDate)
+        endDate: new Date(endDate),
+        ...(artistId && { artistId })
       }
     })
 
-    return NextResponse.json(exhibition, { status: 201 })
+    // 추가 이미지 업로드 및 저장
+    if (additionalImages && additionalImages.length > 0) {
+      const validImages = additionalImages.filter(img => img && img.size > 0)
+      
+      for (let i = 0; i < validImages.length; i++) {
+        const additionalImageUrl = await uploadImage(supabase, validImages[i], 'exhibitions')
+        await prisma.exhibitionImage.create({
+          data: {
+            imageUrl: additionalImageUrl,
+            displayOrder: i,
+            exhibitionId: exhibition.id
+          }
+        })
+      }
+    }
+
+    // 전시회와 관련 데이터 함께 조회
+    const exhibitionWithRelations = await prisma.exhibition.findUnique({
+      where: { id: exhibition.id },
+      include: {
+        artist: true,
+        images: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
+    })
+
+    return NextResponse.json(exhibitionWithRelations, { status: 201 })
   } catch (error) {
     console.error('Failed to create exhibition:', error)
     return NextResponse.json(
-      { error: 'Failed to create exhibition' },
+      { error: error instanceof Error ? error.message : 'Failed to create exhibition' },
       { status: 500 }
     )
   }
@@ -133,6 +170,9 @@ export async function PUT(request: NextRequest) {
     const startDate = formData.get('startDate') as string
     const endDate = formData.get('endDate') as string
     const image = formData.get('image') as File | null
+    const artistId = formData.get('artistId') as string | null
+    const additionalImages = formData.getAll('additionalImages') as File[]
+    const deleteImageIds = formData.get('deleteImageIds') as string | null
 
     if (!id || !title || !startDate || !endDate) {
       return NextResponse.json(
@@ -143,36 +183,22 @@ export async function PUT(request: NextRequest) {
 
     let imageUrl: string | undefined
 
-    // 새 이미지가 업로드된 경우
+    // 새 대표 이미지가 업로드된 경우
     if (image && image.size > 0) {
-      const arrayBuffer = await image.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
+      imageUrl = await uploadImage(supabase, image, 'exhibitions')
+    }
 
-      const fileExt = image.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `exhibitions/${fileName}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('gallery')
-        .upload(filePath, buffer, {
-          contentType: image.type,
-          cacheControl: '3600',
-          upsert: false
+    // 삭제할 추가 이미지 처리
+    if (deleteImageIds) {
+      const idsToDelete = JSON.parse(deleteImageIds) as string[]
+      if (idsToDelete.length > 0) {
+        await prisma.exhibitionImage.deleteMany({
+          where: {
+            id: { in: idsToDelete },
+            exhibitionId: id
+          }
         })
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
-        return NextResponse.json(
-          { error: `Failed to upload image: ${uploadError.message}` },
-          { status: 500 }
-        )
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('gallery')
-        .getPublicUrl(filePath)
-      
-      imageUrl = publicUrl
     }
 
     // DB 업데이트
@@ -182,15 +208,51 @@ export async function PUT(request: NextRequest) {
         title,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
+        artistId: artistId || null,
         ...(imageUrl && { imageUrl })
       }
     })
 
-    return NextResponse.json(exhibition)
+    // 새 추가 이미지 업로드
+    if (additionalImages && additionalImages.length > 0) {
+      const validImages = additionalImages.filter(img => img && img.size > 0)
+      
+      // 기존 이미지의 최대 displayOrder 가져오기
+      const existingImages = await prisma.exhibitionImage.findMany({
+        where: { exhibitionId: id },
+        orderBy: { displayOrder: 'desc' },
+        take: 1
+      })
+      const maxOrder = existingImages.length > 0 ? existingImages[0].displayOrder : -1
+
+      for (let i = 0; i < validImages.length; i++) {
+        const additionalImageUrl = await uploadImage(supabase, validImages[i], 'exhibitions')
+        await prisma.exhibitionImage.create({
+          data: {
+            imageUrl: additionalImageUrl,
+            displayOrder: maxOrder + 1 + i,
+            exhibitionId: id
+          }
+        })
+      }
+    }
+
+    // 전시회와 관련 데이터 함께 조회
+    const exhibitionWithRelations = await prisma.exhibition.findUnique({
+      where: { id: exhibition.id },
+      include: {
+        artist: true,
+        images: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
+    })
+
+    return NextResponse.json(exhibitionWithRelations)
   } catch (error) {
     console.error('Failed to update exhibition:', error)
     return NextResponse.json(
-      { error: 'Failed to update exhibition' },
+      { error: error instanceof Error ? error.message : 'Failed to update exhibition' },
       { status: 500 }
     )
   }

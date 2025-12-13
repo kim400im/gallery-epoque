@@ -1,7 +1,19 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Upload, Loader2 } from 'lucide-react'
+import { X, Upload, Loader2, Plus, Trash2 } from 'lucide-react'
+
+type Artist = {
+  id: string
+  name: string
+  createdAt: string
+}
+
+type ExhibitionImage = {
+  id: string
+  imageUrl: string
+  displayOrder: number
+}
 
 type Exhibition = {
   id: string
@@ -10,6 +22,9 @@ type Exhibition = {
   startDate: string
   endDate: string
   createdAt: string
+  artistId?: string | null
+  artist?: Artist | null
+  images?: ExhibitionImage[]
 }
 
 type Props = {
@@ -17,17 +32,24 @@ type Props = {
   onClose: () => void
   onSuccess: (exhibition: Exhibition) => void
   editingExhibition?: Exhibition | null
+  artists: Artist[]
 }
 
-export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExhibition }: Props) {
+export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExhibition, artists }: Props) {
   const [title, setTitle] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [artistId, setArtistId] = useState<string>('')
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [additionalImages, setAdditionalImages] = useState<File[]>([])
+  const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<ExhibitionImage[]>([])
+  const [deleteImageIds, setDeleteImageIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const additionalFileInputRef = useRef<HTMLInputElement>(null)
 
   const isEditMode = !!editingExhibition
 
@@ -38,6 +60,9 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       setStartDate(editingExhibition.startDate ? editingExhibition.startDate.split('T')[0] : '')
       setEndDate(editingExhibition.endDate ? editingExhibition.endDate.split('T')[0] : '')
       setPreview(editingExhibition.imageUrl)
+      setArtistId(editingExhibition.artistId || '')
+      setExistingImages(editingExhibition.images || [])
+      setDeleteImageIds([])
     }
   }, [editingExhibition])
 
@@ -53,17 +78,41 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     }
   }
 
+  const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      setAdditionalImages(prev => [...prev, ...files])
+      
+      files.forEach(file => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setAdditionalPreviews(prev => [...prev, reader.result as string])
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+  }
+
+  const removeAdditionalImage = (index: number) => {
+    setAdditionalImages(prev => prev.filter((_, i) => i !== index))
+    setAdditionalPreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const removeExistingImage = (imageId: string) => {
+    setDeleteImageIds(prev => [...prev, imageId])
+    setExistingImages(prev => prev.filter(img => img.id !== imageId))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // 등록 모드에서는 이미지 필수, 수정 모드에서는 선택
     if (!title || !startDate || !endDate) {
       setError('모든 필드를 입력해주세요.')
       return
     }
 
     if (!isEditMode && !image) {
-      setError('이미지를 업로드해주세요.')
+      setError('대표 이미지를 업로드해주세요.')
       return
     }
 
@@ -81,12 +130,24 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       formData.append('startDate', startDate)
       formData.append('endDate', endDate)
       
+      if (artistId) {
+        formData.append('artistId', artistId)
+      }
+      
       if (image) {
         formData.append('image', image)
       }
 
+      // 추가 이미지들
+      additionalImages.forEach(img => {
+        formData.append('additionalImages', img)
+      })
+
       if (isEditMode) {
         formData.append('id', editingExhibition.id)
+        if (deleteImageIds.length > 0) {
+          formData.append('deleteImageIds', JSON.stringify(deleteImageIds))
+        }
       }
 
       const response = await fetch('/api/exhibitions', {
@@ -96,7 +157,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || `Failed to ${isEditMode ? 'update' : 'create'} exhibition`)
+        throw new Error(data.error || `전시회 ${isEditMode ? '수정' : '등록'}에 실패했습니다.`)
       }
 
       const exhibition = await response.json()
@@ -113,8 +174,13 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setTitle('')
     setStartDate('')
     setEndDate('')
+    setArtistId('')
     setImage(null)
     setPreview(null)
+    setAdditionalImages([])
+    setAdditionalPreviews([])
+    setExistingImages([])
+    setDeleteImageIds([])
     setError(null)
     onClose()
   }
@@ -130,7 +196,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       />
       
       {/* 모달 */}
-      <div className="relative bg-[#1a1c1a] border border-[#7c8d4c]/30 rounded-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-[#1a1c1a] border border-[#7c8d4c]/30 rounded-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl text-[#f8f4e3] font-[var(--font-cormorant)]">
@@ -161,6 +227,26 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             />
           </div>
 
+          {/* 작가 선택 */}
+          <div>
+            <label htmlFor="artist" className="block text-sm text-[#ccc5b9] mb-2">
+              작가
+            </label>
+            <select
+              id="artist"
+              value={artistId}
+              onChange={(e) => setArtistId(e.target.value)}
+              className="w-full px-4 py-3 bg-[#111311] border border-[#7c8d4c]/30 rounded-lg text-[#f8f4e3] focus:outline-none focus:border-[#7c8d4c] transition-colors"
+            >
+              <option value="">작가를 선택하세요 (선택사항)</option>
+              {artists.map((artist) => (
+                <option key={artist.id} value={artist.id}>
+                  {artist.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* 전시 기간 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -189,10 +275,10 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             </div>
           </div>
 
-          {/* 이미지 업로드 */}
+          {/* 대표 이미지 업로드 */}
           <div>
             <label className="block text-sm text-[#ccc5b9] mb-2">
-              전시회 이미지 {isEditMode && <span className="text-[#7c8d4c]">(선택사항)</span>}
+              대표 이미지 {isEditMode && <span className="text-[#7c8d4c]">(선택사항)</span>}
             </label>
             <input
               ref={fileInputRef}
@@ -236,9 +322,78 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
                 className="w-full h-48 border-2 border-dashed border-[#7c8d4c]/30 rounded-lg flex flex-col items-center justify-center gap-2 text-[#ccc5b9] hover:border-[#7c8d4c]/50 hover:text-[#f8f4e3] transition-colors"
               >
                 <Upload className="w-8 h-8" />
-                <span className="text-sm">클릭하여 이미지 업로드</span>
+                <span className="text-sm">클릭하여 대표 이미지 업로드</span>
               </button>
             )}
+          </div>
+
+          {/* 추가 이미지 업로드 */}
+          <div>
+            <label className="block text-sm text-[#ccc5b9] mb-2">
+              추가 이미지 <span className="text-[#7c8d4c]">(선택사항)</span>
+            </label>
+            <input
+              ref={additionalFileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleAdditionalImagesChange}
+              className="hidden"
+            />
+
+            {/* 기존 추가 이미지 (수정 모드) */}
+            {existingImages.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {existingImages.map((img) => (
+                  <div key={img.id} className="relative">
+                    <img
+                      src={img.imageUrl}
+                      alt="Additional"
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(img.id)}
+                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 새로 추가할 이미지 미리보기 */}
+            {additionalPreviews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {additionalPreviews.map((preview, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Additional ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAdditionalImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 추가 이미지 업로드 버튼 */}
+            <button
+              type="button"
+              onClick={() => additionalFileInputRef.current?.click()}
+              className="w-full py-3 border-2 border-dashed border-[#7c8d4c]/30 rounded-lg flex items-center justify-center gap-2 text-[#ccc5b9] hover:border-[#7c8d4c]/50 hover:text-[#f8f4e3] transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="text-sm">추가 이미지 업로드</span>
+            </button>
           </div>
 
           {/* 에러 메시지 */}

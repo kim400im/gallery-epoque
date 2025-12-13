@@ -5,37 +5,73 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Navigation from '@/app/components/Navigation';
 
-// 갤러리 이미지 목업 데이터
+// 갤러리 이미지 데이터
 const galleryImages = [
   {
     id: 1,
-    src: "https://picsum.photos/seed/gallery1/1200/800",
+    src: "/images/gallery/Gemini_Generated_Image_9p6nyw9p6nyw9p6n.png",
     alt: "Gallery Interior 1",
     caption: "1층 메인 전시홀"
   },
   {
     id: 2,
-    src: "https://picsum.photos/seed/gallery2/1200/800",
+    src: "/images/gallery/Gemini_Generated_Image_ai47gyai47gyai47.png",
     alt: "Gallery Interior 2",
     caption: "2층 특별 전시실"
   },
   {
     id: 3,
-    src: "https://picsum.photos/seed/gallery3/1200/800",
+    src: "/images/gallery/Gemini_Generated_Image_g0ngfg0ngfg0ngfg.png",
     alt: "Gallery Interior 3",
     caption: "자연광이 들어오는 아트리움"
   },
   {
     id: 4,
-    src: "https://picsum.photos/seed/gallery4/1200/800",
+    src: "/images/gallery/Gemini_Generated_Image_i0co3i0co3i0co3i.png",
     alt: "Gallery Interior 4",
     caption: "프라이빗 컬렉션 룸"
   },
   {
     id: 5,
-    src: "https://picsum.photos/seed/gallery5/1200/800",
+    src: "/images/gallery/Gemini_Generated_Image_lptfsrlptfsrlptf.png",
     alt: "Gallery Interior 5",
     caption: "아티스트 라운지"
+  },
+  {
+    id: 6,
+    src: "/images/gallery/Gemini_Generated_Image_mvhdt7mvhdt7mvhd.png",
+    alt: "Gallery Interior 6",
+    caption: "갤러리 외관"
+  },
+  {
+    id: 7,
+    src: "/images/gallery/Gemini_Generated_Image_ucbo3nucbo3nucbo.png",
+    alt: "Gallery Interior 7",
+    caption: "전시 공간"
+  },
+  {
+    id: 8,
+    src: "/images/gallery/Gemini_Generated_Image_ud7w9wud7w9wud7w.png",
+    alt: "Gallery Interior 8",
+    caption: "작품 전시실"
+  },
+  {
+    id: 9,
+    src: "/images/gallery/Gemini_Generated_Image_v4mn3lv4mn3lv4mn.png",
+    alt: "Gallery Interior 9",
+    caption: "휴식 공간"
+  },
+  {
+    id: 10,
+    src: "/images/gallery/Gemini_Generated_Image_xf9rr7xf9rr7xf9r.png",
+    alt: "Gallery Interior 10",
+    caption: "조명 시스템"
+  },
+  {
+    id: 11,
+    src: "/images/gallery/Gemini_Generated_Image_ygslw6ygslw6ygsl.png",
+    alt: "Gallery Interior 11",
+    caption: "아트리움 전경"
   },
 ];
 
@@ -229,7 +265,7 @@ export default function AboutPage() {
             className="relative"
           >
             <img
-              src="https://picsum.photos/seed/gallerydetail/800/1000"
+              src="/images/gallery/Gemini_Generated_Image_mvhdt7mvhdt7mvhd.png"
               alt="Gallery Detail"
               className="w-full rounded-lg"
             />
@@ -274,17 +310,17 @@ export default function AboutPage() {
             {
               title: "메인 전시홀",
               description: "600m²의 넓은 공간에서 대규모 전시를 진행합니다. 5m 천장고와 가변형 조명 시스템을 갖추고 있습니다.",
-              image: "https://picsum.photos/seed/space1/600/400"
+              image: "/images/gallery/Gemini_Generated_Image_9p6nyw9p6nyw9p6n.png"
             },
             {
               title: "미디어아트 룸",
               description: "프로젝션 매핑과 사운드 설치를 위한 블랙박스 공간입니다. 최신 AV 장비가 상설 구비되어 있습니다.",
-              image: "https://picsum.photos/seed/space2/600/400"
+              image: "/images/gallery/Gemini_Generated_Image_ai47gyai47gyai47.png"
             },
             {
               title: "프라이빗 갤러리",
               description: "소규모 기획전과 VIP 프리뷰를 위한 공간입니다. 아늑한 분위기에서 작품을 감상할 수 있습니다.",
-              image: "https://picsum.photos/seed/space3/600/400"
+              image: "/images/gallery/Gemini_Generated_Image_g0ngfg0ngfg0ngfg.png"
             }
           ].map((facility, index) => (
             <motion.div

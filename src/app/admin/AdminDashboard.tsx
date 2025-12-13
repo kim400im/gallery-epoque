@@ -1,9 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 import ExhibitionModal from './ExhibitionModal'
+import ArtistModal from './ArtistModal'
+
+type Artist = {
+  id: string
+  name: string
+  createdAt: string
+}
+
+type ExhibitionImage = {
+  id: string
+  imageUrl: string
+  displayOrder: number
+}
 
 type Exhibition = {
   id: string
@@ -12,6 +25,9 @@ type Exhibition = {
   startDate: string
   endDate: string
   createdAt: string
+  artistId?: string | null
+  artist?: Artist | null
+  images?: ExhibitionImage[]
 }
 
 type Props = {
@@ -19,11 +35,15 @@ type Props = {
 }
 
 export default function AdminDashboard({ userEmail }: Props) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isExhibitionModalOpen, setIsExhibitionModalOpen] = useState(false)
+  const [isArtistModalOpen, setIsArtistModalOpen] = useState(false)
   const [editingExhibition, setEditingExhibition] = useState<Exhibition | null>(null)
+  const [editingArtist, setEditingArtist] = useState<Artist | null>(null)
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([])
+  const [artists, setArtists] = useState<Artist[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'exhibitions' | 'artists'>('exhibitions')
 
   // 전시회 목록 불러오기
   const fetchExhibitions = async () => {
@@ -35,15 +55,27 @@ export default function AdminDashboard({ userEmail }: Props) {
       }
     } catch (error) {
       console.error('Failed to fetch exhibitions:', error)
-    } finally {
-      setLoading(false)
+    }
+  }
+
+  // 작가 목록 불러오기
+  const fetchArtists = async () => {
+    try {
+      const response = await fetch('/api/artists')
+      if (response.ok) {
+        const data = await response.json()
+        setArtists(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch artists:', error)
     }
   }
 
   useEffect(() => {
-    fetchExhibitions()
+    Promise.all([fetchExhibitions(), fetchArtists()]).finally(() => setLoading(false))
   }, [])
 
+  // 전시회 핸들러
   const handleExhibitionCreated = (exhibition: Exhibition) => {
     setExhibitions(prev => [exhibition, ...prev])
   }
@@ -52,12 +84,12 @@ export default function AdminDashboard({ userEmail }: Props) {
     setExhibitions(prev => prev.map(e => e.id === exhibition.id ? exhibition : e))
   }
 
-  const handleEdit = (exhibition: Exhibition) => {
+  const handleEditExhibition = (exhibition: Exhibition) => {
     setEditingExhibition(exhibition)
-    setIsModalOpen(true)
+    setIsExhibitionModalOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteExhibition = async (id: string) => {
     if (!confirm('정말로 이 전시회를 삭제하시겠습니까?')) {
       return
     }
@@ -82,16 +114,70 @@ export default function AdminDashboard({ userEmail }: Props) {
     }
   }
 
-  const handleModalClose = () => {
-    setIsModalOpen(false)
+  const handleExhibitionModalClose = () => {
+    setIsExhibitionModalOpen(false)
     setEditingExhibition(null)
   }
 
-  const handleModalSuccess = (exhibition: Exhibition) => {
+  const handleExhibitionModalSuccess = (exhibition: Exhibition) => {
     if (editingExhibition) {
       handleExhibitionUpdated(exhibition)
     } else {
       handleExhibitionCreated(exhibition)
+    }
+  }
+
+  // 작가 핸들러
+  const handleArtistCreated = (artist: Artist) => {
+    setArtists(prev => [artist, ...prev])
+  }
+
+  const handleArtistUpdated = (artist: Artist) => {
+    setArtists(prev => prev.map(a => a.id === artist.id ? artist : a))
+  }
+
+  const handleEditArtist = (artist: Artist) => {
+    setEditingArtist(artist)
+    setIsArtistModalOpen(true)
+  }
+
+  const handleDeleteArtist = async (id: string) => {
+    if (!confirm('정말로 이 작가를 삭제하시겠습니까? 관련된 전시회의 작가 정보가 삭제됩니다.')) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const response = await fetch(`/api/artists?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setArtists(prev => prev.filter(a => a.id !== id))
+        // 전시회 목록도 새로고침 (작가 정보 업데이트)
+        fetchExhibitions()
+      } else {
+        const data = await response.json()
+        alert(data.error || '삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Failed to delete artist:', error)
+      alert('삭제에 실패했습니다.')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleArtistModalClose = () => {
+    setIsArtistModalOpen(false)
+    setEditingArtist(null)
+  }
+
+  const handleArtistModalSuccess = (artist: Artist) => {
+    if (editingArtist) {
+      handleArtistUpdated(artist)
+    } else {
+      handleArtistCreated(artist)
     }
   }
 
@@ -147,7 +233,7 @@ export default function AdminDashboard({ userEmail }: Props) {
         </div>
 
         {/* 상태 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6">
             <h3 className="text-[#ccc5b9] text-sm mb-2">로그인 상태</h3>
             <p className="text-[#7c8d4c] text-2xl font-semibold">인증됨</p>
@@ -157,97 +243,226 @@ export default function AdminDashboard({ userEmail }: Props) {
             <p className="text-[#f8f4e3] text-2xl font-semibold">{exhibitions.length}개</p>
           </div>
           <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6">
+            <h3 className="text-[#ccc5b9] text-sm mb-2">작가 수</h3>
+            <p className="text-[#f8f4e3] text-2xl font-semibold">{artists.length}명</p>
+          </div>
+          <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6">
             <h3 className="text-[#ccc5b9] text-sm mb-2">예약 요청</h3>
             <p className="text-[#f8f4e3] text-2xl font-semibold">0건</p>
           </div>
         </div>
 
-        {/* 전시회 관리 섹션 */}
-        <div className="mt-12">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg text-[#f8f4e3]">전시회 관리</h3>
+        {/* 탭 네비게이션 */}
+        <div className="mt-12 border-b border-[#7c8d4c]/20">
+          <div className="flex gap-4">
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#7c8d4c] text-[#f8f4e3] rounded-lg hover:bg-[#6a7a40] transition-colors"
+              onClick={() => setActiveTab('exhibitions')}
+              className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                activeTab === 'exhibitions'
+                  ? 'text-[#7c8d4c]'
+                  : 'text-[#ccc5b9] hover:text-[#f8f4e3]'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              전시회 등록
+              전시회 관리
+              {activeTab === 'exhibitions' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('artists')}
+              className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                activeTab === 'artists'
+                  ? 'text-[#7c8d4c]'
+                  : 'text-[#ccc5b9] hover:text-[#f8f4e3]'
+              }`}
+            >
+              작가 관리
+              {activeTab === 'artists' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
+              )}
             </button>
           </div>
+        </div>
 
-          {/* 전시회 목록 */}
-          {loading ? (
-            <div className="text-[#ccc5b9] text-center py-12">로딩 중...</div>
-          ) : exhibitions.length === 0 ? (
-            <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-12 text-center">
-              <p className="text-[#ccc5b9] mb-4">등록된 전시회가 없습니다.</p>
+        {/* 전시회 관리 탭 */}
+        {activeTab === 'exhibitions' && (
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg text-[#f8f4e3]">전시회 목록</h3>
               <button
-                onClick={() => setIsModalOpen(true)}
-                className="text-[#7c8d4c] hover:text-[#d4af37] transition-colors"
+                onClick={() => setIsExhibitionModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#7c8d4c] text-[#f8f4e3] rounded-lg hover:bg-[#6a7a40] transition-colors"
               >
-                첫 전시회를 등록해보세요
+                <Plus className="w-4 h-4" />
+                전시회 등록
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {exhibitions.map((exhibition) => {
-                const status = getExhibitionStatus(exhibition)
-                return (
-                  <div
-                    key={exhibition.id}
-                    className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg overflow-hidden group"
-                  >
-                    <div className="relative">
-                      <img
-                        src={exhibition.imageUrl}
-                        alt={exhibition.title}
-                        className="w-full h-48 object-cover"
-                      />
-                      {/* 상태 배지 */}
-                      <span className={`absolute top-2 left-2 px-2 py-1 text-xs rounded border ${status.color}`}>
-                        {status.label}
-                      </span>
-                      {/* 호버 시 액션 버튼 */}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                        <button
-                          onClick={() => handleEdit(exhibition)}
-                          className="p-2 bg-[#7c8d4c] text-white rounded-lg hover:bg-[#6a7a40] transition-colors"
-                          title="수정"
-                        >
-                          <Pencil className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(exhibition.id)}
-                          disabled={deleting === exhibition.id}
-                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                          title="삭제"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+
+            {/* 전시회 목록 */}
+            {loading ? (
+              <div className="text-[#ccc5b9] text-center py-12">로딩 중...</div>
+            ) : exhibitions.length === 0 ? (
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-12 text-center">
+                <p className="text-[#ccc5b9] mb-4">등록된 전시회가 없습니다.</p>
+                <button
+                  onClick={() => setIsExhibitionModalOpen(true)}
+                  className="text-[#7c8d4c] hover:text-[#d4af37] transition-colors"
+                >
+                  첫 전시회를 등록해보세요
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {exhibitions.map((exhibition) => {
+                  const status = getExhibitionStatus(exhibition)
+                  return (
+                    <div
+                      key={exhibition.id}
+                      className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg overflow-hidden group"
+                    >
+                      <div className="relative">
+                        <img
+                          src={exhibition.imageUrl}
+                          alt={exhibition.title}
+                          className="w-full h-48 object-cover"
+                        />
+                        {/* 상태 배지 */}
+                        <span className={`absolute top-2 left-2 px-2 py-1 text-xs rounded border ${status.color}`}>
+                          {status.label}
+                        </span>
+                        {/* 추가 이미지 개수 표시 */}
+                        {exhibition.images && exhibition.images.length > 0 && (
+                          <span className="absolute top-2 right-2 px-2 py-1 text-xs rounded bg-black/50 text-white">
+                            +{exhibition.images.length} 이미지
+                          </span>
+                        )}
+                        {/* 호버 시 액션 버튼 */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                          <button
+                            onClick={() => handleEditExhibition(exhibition)}
+                            className="p-2 bg-[#7c8d4c] text-white rounded-lg hover:bg-[#6a7a40] transition-colors"
+                            title="수정"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExhibition(exhibition.id)}
+                            disabled={deleting === exhibition.id}
+                            className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="text-[#f8f4e3] font-medium mb-1">
+                          {exhibition.title}
+                        </h4>
+                        {exhibition.artist && (
+                          <p className="text-[#7c8d4c] text-sm mb-2">
+                            {exhibition.artist.name}
+                          </p>
+                        )}
+                        <p className="text-[#ccc5b9] text-sm">
+                          {formatDate(exhibition.startDate)} - {formatDate(exhibition.endDate)}
+                        </p>
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h4 className="text-[#f8f4e3] font-medium mb-2">
-                        {exhibition.title}
-                      </h4>
-                      <p className="text-[#ccc5b9] text-sm">
-                        {formatDate(exhibition.startDate)} - {formatDate(exhibition.endDate)}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 작가 관리 탭 */}
+        {activeTab === 'artists' && (
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg text-[#f8f4e3]">작가 목록</h3>
+              <button
+                onClick={() => setIsArtistModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#7c8d4c] text-[#f8f4e3] rounded-lg hover:bg-[#6a7a40] transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                작가 등록
+              </button>
             </div>
-          )}
-        </div>
+
+            {/* 작가 목록 */}
+            {loading ? (
+              <div className="text-[#ccc5b9] text-center py-12">로딩 중...</div>
+            ) : artists.length === 0 ? (
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-12 text-center">
+                <Users className="w-12 h-12 text-[#7c8d4c]/50 mx-auto mb-4" />
+                <p className="text-[#ccc5b9] mb-4">등록된 작가가 없습니다.</p>
+                <button
+                  onClick={() => setIsArtistModalOpen(true)}
+                  className="text-[#7c8d4c] hover:text-[#d4af37] transition-colors"
+                >
+                  첫 작가를 등록해보세요
+                </button>
+              </div>
+            ) : (
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[#7c8d4c]/20">
+                      <th className="text-left text-[#ccc5b9] text-sm font-medium px-6 py-4">작가명</th>
+                      <th className="text-left text-[#ccc5b9] text-sm font-medium px-6 py-4">등록일</th>
+                      <th className="text-right text-[#ccc5b9] text-sm font-medium px-6 py-4">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {artists.map((artist) => (
+                      <tr key={artist.id} className="border-b border-[#7c8d4c]/10 last:border-b-0">
+                        <td className="text-[#f8f4e3] px-6 py-4">{artist.name}</td>
+                        <td className="text-[#ccc5b9] text-sm px-6 py-4">{formatDate(artist.createdAt)}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleEditArtist(artist)}
+                              className="p-2 text-[#7c8d4c] hover:bg-[#7c8d4c]/10 rounded-lg transition-colors"
+                              title="수정"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteArtist(artist.id)}
+                              disabled={deleting === artist.id}
+                              className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                              title="삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* 전시회 등록/수정 모달 */}
       <ExhibitionModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSuccess={handleModalSuccess}
+        isOpen={isExhibitionModalOpen}
+        onClose={handleExhibitionModalClose}
+        onSuccess={handleExhibitionModalSuccess}
         editingExhibition={editingExhibition}
+        artists={artists}
+      />
+
+      {/* 작가 등록/수정 모달 */}
+      <ArtistModal
+        isOpen={isArtistModalOpen}
+        onClose={handleArtistModalClose}
+        onSuccess={handleArtistModalSuccess}
+        editingArtist={editingArtist}
       />
     </div>
   )

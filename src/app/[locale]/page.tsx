@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -9,67 +10,29 @@ import Navigation from '../components/Navigation';
 // 3D Scene - 시안 2: Particle Wave
 import ParticleWave from '../components/three/Scene2_ParticleWave';
 
-// 목업 전시 데이터
-const currentExhibitions = [
-  {
-    id: 1,
-    title: "빛의 형상",
-    artist: "김서연",
-    date: "2024.12.01 - 2025.01.15",
-    image: "https://picsum.photos/seed/exhibit1/600/800"
-  },
-  {
-    id: 2,
-    title: "Urban Fragments",
-    artist: "이정민",
-    date: "2024.12.10 - 2025.01.20",
-    image: "https://picsum.photos/seed/exhibit2/600/800"
-  },
-];
-
-const pastExhibitions = [
-  {
-    id: 1,
-    title: "시간의 결",
-    artist: "박현우",
-    date: "2024.10.01 - 2024.11.30",
-    image: "https://picsum.photos/seed/past1/600/800"
-  },
-  {
-    id: 2,
-    title: "Silent Echo",
-    artist: "최유나",
-    date: "2024.09.15 - 2024.10.31",
-    image: "https://picsum.photos/seed/past2/600/800"
-  },
-  {
-    id: 3,
-    title: "자연의 숨결",
-    artist: "정다은",
-    date: "2024.08.01 - 2024.09.10",
-    image: "https://picsum.photos/seed/past3/600/800"
-  },
-];
-
-const upcomingExhibitions = [
-  {
-    id: 1,
-    title: "미래의 기억",
-    artist: "한소희",
-    date: "2025.02.01 - 2025.03.15",
-    image: "https://picsum.photos/seed/upcoming1/600/800"
-  },
-  {
-    id: 2,
-    title: "Boundaries",
-    artist: "오민준",
-    date: "2025.03.20 - 2025.04.30",
-    image: "https://picsum.photos/seed/upcoming2/600/800"
-  },
-];
+type Exhibition = {
+  id: string
+  title: string
+  imageUrl: string
+  startDate: string
+  endDate: string
+}
 
 // 전시 카드 컴포넌트
-function ExhibitionCard({ exhibition, index }: { exhibition: typeof currentExhibitions[0], index: number }) {
+function ExhibitionCard({ exhibition, index }: { exhibition: Exhibition, index: number }) {
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\. /g, '.').replace('.', '.');
+  };
+
+  const dateRange = exhibition.startDate && exhibition.endDate 
+    ? `${formatDate(exhibition.startDate)} - ${formatDate(exhibition.endDate)}`
+    : '';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -80,17 +43,16 @@ function ExhibitionCard({ exhibition, index }: { exhibition: typeof currentExhib
     >
       <div className="relative overflow-hidden rounded-lg aspect-[3/4] mb-4">
         <img
-          src={exhibition.image}
+          src={exhibition.imageUrl}
           alt={exhibition.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/80 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6">
-          <p className="text-[#d4af37] text-sm mb-2">{exhibition.date}</p>
+          <p className="text-[#d4af37] text-sm mb-2">{dateRange}</p>
           <h3 className="text-[#f8f4e3] text-xl font-[var(--font-cormorant)] font-medium mb-1">
             {exhibition.title}
           </h3>
-          <p className="text-[#ccc5b9] text-sm">{exhibition.artist}</p>
         </div>
       </div>
     </motion.div>
@@ -101,11 +63,13 @@ function ExhibitionCard({ exhibition, index }: { exhibition: typeof currentExhib
 function ExhibitionSection({ 
   title, 
   exhibitions, 
-  link 
+  link,
+  loading
 }: { 
   title: string; 
-  exhibitions: typeof currentExhibitions;
+  exhibitions: Exhibition[];
   link: string;
+  loading: boolean;
 }) {
   return (
     <section className="py-20 px-8 md:px-24">
@@ -132,17 +96,85 @@ function ExhibitionSection({
         </Link>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {exhibitions.map((exhibition, index) => (
-          <ExhibitionCard key={exhibition.id} exhibition={exhibition} index={index} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-[#ccc5b9] text-center py-12">Loading...</div>
+      ) : exhibitions.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="text-center py-16"
+        >
+          <p className="text-[#ccc5b9] text-lg font-[var(--font-cormorant)] tracking-wider">
+            Coming Soon
+          </p>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {exhibitions.slice(0, 3).map((exhibition, index) => (
+            <ExhibitionCard key={exhibition.id} exhibition={exhibition} index={index} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
 
 export default function GalleryLanding() {
   const t = useTranslations();
+  const [currentExhibitions, setCurrentExhibitions] = useState<Exhibition[]>([]);
+  const [pastExhibitions, setPastExhibitions] = useState<Exhibition[]>([]);
+  const [upcomingExhibitions, setUpcomingExhibitions] = useState<Exhibition[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchExhibitions = async () => {
+      try {
+        const response = await fetch('/api/exhibitions');
+        if (response.ok) {
+          const data: Exhibition[] = await response.json();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const current: Exhibition[] = [];
+          const past: Exhibition[] = [];
+          const upcoming: Exhibition[] = [];
+
+          data.forEach(exhibition => {
+            if (!exhibition.startDate || !exhibition.endDate) {
+              // 날짜가 없으면 과거로 분류
+              past.push(exhibition);
+              return;
+            }
+
+            const startDate = new Date(exhibition.startDate);
+            const endDate = new Date(exhibition.endDate);
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+
+            if (startDate > today) {
+              upcoming.push(exhibition);
+            } else if (endDate < today) {
+              past.push(exhibition);
+            } else {
+              current.push(exhibition);
+            }
+          });
+
+          setCurrentExhibitions(current);
+          setPastExhibitions(past);
+          setUpcomingExhibitions(upcoming);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exhibitions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExhibitions();
+  }, []);
 
   return (
     <div className="w-full bg-[#111311]">
@@ -199,18 +231,7 @@ export default function GalleryLanding() {
         title="Current Exhibition" 
         exhibitions={currentExhibitions}
         link="/exhibition/current"
-      />
-
-      {/* 구분선 */}
-      <div className="px-8 md:px-24">
-        <div className="border-t border-[#7c8d4c]/20" />
-      </div>
-
-      {/* 지난 전시 섹션 */}
-      <ExhibitionSection 
-        title="Past Exhibition" 
-        exhibitions={pastExhibitions}
-        link="/exhibition/past"
+        loading={loading}
       />
 
       {/* 구분선 */}
@@ -223,13 +244,27 @@ export default function GalleryLanding() {
         title="Upcoming Exhibition" 
         exhibitions={upcomingExhibitions}
         link="/exhibition/upcoming"
+        loading={loading}
+      />
+
+      {/* 구분선 */}
+      <div className="px-8 md:px-24">
+        <div className="border-t border-[#7c8d4c]/20" />
+      </div>
+
+      {/* 지난 전시 섹션 */}
+      <ExhibitionSection 
+        title="Past Exhibition" 
+        exhibitions={pastExhibitions}
+        link="/exhibition/past"
+        loading={loading}
       />
 
       {/* 푸터 */}
       <footer className="py-16 px-8 md:px-24 border-t border-[#7c8d4c]/20">
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-[#7c8d4c] font-[var(--font-cormorant)] text-2xl">
-            Gallery Époque
+            Gallery Epoque
           </div>
           <div className="text-[#ccc5b9] text-sm text-center md:text-right">
             <p>서울특별시 종로구 삼청로 123-1</p>
@@ -237,7 +272,7 @@ export default function GalleryLanding() {
           </div>
         </div>
         <div className="mt-8 text-center text-[#7c8d4c]/50 text-xs">
-          © 2024 Gallery Époque. All rights reserved.
+          © 2024 Gallery Epoque. All rights reserved.
         </div>
       </footer>
     </div>
