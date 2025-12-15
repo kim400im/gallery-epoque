@@ -15,6 +15,12 @@ type ExhibitionImage = {
   displayOrder: number
 }
 
+type ExhibitionArtist = {
+  id: string
+  artistId: string
+  artist: Artist
+}
+
 type Exhibition = {
   id: string
   title: string
@@ -22,8 +28,7 @@ type Exhibition = {
   startDate: string
   endDate: string
   createdAt: string
-  artistId?: string | null
-  artist?: Artist | null
+  artists?: ExhibitionArtist[]
   images?: ExhibitionImage[]
 }
 
@@ -39,7 +44,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
   const [title, setTitle] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [artistId, setArtistId] = useState<string>('')
+  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([])
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [additionalImages, setAdditionalImages] = useState<File[]>([])
@@ -60,7 +65,9 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       setStartDate(editingExhibition.startDate ? editingExhibition.startDate.split('T')[0] : '')
       setEndDate(editingExhibition.endDate ? editingExhibition.endDate.split('T')[0] : '')
       setPreview(editingExhibition.imageUrl)
-      setArtistId(editingExhibition.artistId || '')
+      // 기존 작가들의 ID 배열 설정
+      const artistIds = editingExhibition.artists?.map(ea => ea.artistId) || []
+      setSelectedArtistIds(artistIds)
       setExistingImages(editingExhibition.images || [])
       setDeleteImageIds([])
     }
@@ -103,6 +110,22 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setExistingImages(prev => prev.filter(img => img.id !== imageId))
   }
 
+  // 작가 선택/해제 핸들러
+  const handleArtistToggle = (artistId: string) => {
+    setSelectedArtistIds(prev => {
+      if (prev.includes(artistId)) {
+        return prev.filter(id => id !== artistId)
+      } else {
+        return [...prev, artistId]
+      }
+    })
+  }
+
+  // 선택된 작가 제거
+  const removeSelectedArtist = (artistId: string) => {
+    setSelectedArtistIds(prev => prev.filter(id => id !== artistId))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -130,8 +153,9 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       formData.append('startDate', startDate)
       formData.append('endDate', endDate)
       
-      if (artistId) {
-        formData.append('artistId', artistId)
+      // 다중 작가 ID 전송
+      if (selectedArtistIds.length > 0) {
+        formData.append('artistIds', JSON.stringify(selectedArtistIds))
       }
       
       if (image) {
@@ -174,7 +198,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setTitle('')
     setStartDate('')
     setEndDate('')
-    setArtistId('')
+    setSelectedArtistIds([])
     setImage(null)
     setPreview(null)
     setAdditionalImages([])
@@ -184,6 +208,9 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setError(null)
     onClose()
   }
+
+  // 선택되지 않은 작가만 드롭다운에 표시
+  const availableArtists = artists.filter(artist => !selectedArtistIds.includes(artist.id))
 
   if (!isOpen) return null
 
@@ -227,19 +254,54 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             />
           </div>
 
-          {/* 작가 선택 */}
+          {/* 작가 선택 (다중 선택) */}
           <div>
             <label htmlFor="artist" className="block text-sm text-[#ccc5b9] mb-2">
-              작가
+              작가 <span className="text-[#7c8d4c]">(여러 명 선택 가능)</span>
             </label>
+            
+            {/* 선택된 작가들 표시 */}
+            {selectedArtistIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedArtistIds.map(artistId => {
+                  const artist = artists.find(a => a.id === artistId)
+                  if (!artist) return null
+                  return (
+                    <span
+                      key={artistId}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#7c8d4c]/20 border border-[#7c8d4c]/30 rounded-full text-sm text-[#f8f4e3]"
+                    >
+                      {artist.name}
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedArtist(artistId)}
+                        className="hover:text-red-400 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 작가 선택 드롭다운 */}
             <select
               id="artist"
-              value={artistId}
-              onChange={(e) => setArtistId(e.target.value)}
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleArtistToggle(e.target.value)
+                }
+              }}
               className="w-full px-4 py-3 bg-[#111311] border border-[#7c8d4c]/30 rounded-lg text-[#f8f4e3] focus:outline-none focus:border-[#7c8d4c] transition-colors"
             >
-              <option value="">작가를 선택하세요 (선택사항)</option>
-              {artists.map((artist) => (
+              <option value="">
+                {availableArtists.length > 0 
+                  ? '작가를 선택하세요 (선택사항)' 
+                  : '모든 작가가 선택되었습니다'}
+              </option>
+              {availableArtists.map((artist) => (
                 <option key={artist.id} value={artist.id}>
                   {artist.name}
                 </option>
@@ -366,10 +428,10 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             {/* 새로 추가할 이미지 미리보기 */}
             {additionalPreviews.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-2">
-                {additionalPreviews.map((preview, index) => (
+                {additionalPreviews.map((previewUrl, index) => (
                   <div key={index} className="relative">
                     <img
-                      src={preview}
+                      src={previewUrl}
                       alt={`Additional ${index + 1}`}
                       className="w-full h-24 object-cover rounded-lg"
                     />

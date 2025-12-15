@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import Navigation from '@/app/components/Navigation';
 
 type Exhibition = {
@@ -31,6 +32,13 @@ export default function PastExhibitionPage() {
             const endDate = new Date(exhibition.endDate);
             endDate.setHours(23, 59, 59, 999);
             return endDate < today;
+          });
+          
+          // 종료일 기준 내림차순 정렬 (최신 종료 전시가 먼저)
+          pastExhibitions.sort((a, b) => {
+            const dateA = a.endDate ? new Date(a.endDate).getTime() : 0;
+            const dateB = b.endDate ? new Date(b.endDate).getTime() : 0;
+            return dateB - dateA;
           });
           
           setExhibitions(pastExhibitions);
@@ -68,24 +76,28 @@ export default function PastExhibitionPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {exhibitions.map((exhibition) => (
-              <div
+              <Link
                 key={exhibition.id}
-                className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg overflow-hidden hover:border-[#7c8d4c]/50 transition-colors"
+                href={`/exhibition/${exhibition.id}`}
+                className="group cursor-pointer block"
               >
-                <img
-                  src={exhibition.imageUrl}
-                  alt={exhibition.title}
-                  className="w-full h-64 object-cover"
-                />
-                <div className="p-6">
-                  <h2 className="text-xl text-[#f8f4e3] font-medium mb-2">
-                    {exhibition.title}
-                  </h2>
-                  <p className="text-[#ccc5b9] text-sm">
-                    {formatDate(exhibition.startDate)} - {formatDate(exhibition.endDate)}
-                  </p>
+                <div className="relative overflow-hidden rounded-lg aspect-[3/4] mb-4">
+                  <img
+                    src={exhibition.imageUrl}
+                    alt={exhibition.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <p className="text-[#d4af37] text-sm mb-2">
+                      {formatDate(exhibition.startDate)} - {formatDate(exhibition.endDate)}
+                    </p>
+                    <h2 className="text-[#f8f4e3] text-xl font-[var(--font-cormorant)] font-medium">
+                      {exhibition.title}
+                    </h2>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

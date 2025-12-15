@@ -144,7 +144,7 @@ function ImageSlider() {
 // 갤러리 통계 컴포넌트
 function Stats() {
   const stats = [
-    { number: "1,200", label: "전시 면적 (m²)" },
+    { number: "20", label: "전시 면적 (평)" },
     { number: "150+", label: "누적 전시 작가" },
     { number: "50+", label: "연간 전시 횟수" },
     { number: "30,000+", label: "연간 방문객" },
@@ -214,7 +214,7 @@ export default function AboutPage() {
             About <span className="text-[#7c8d4c]">Gallery Époque</span>
           </h1>
           <p className="text-xl md:text-2xl text-[#ccc5b9] font-light leading-relaxed">
-            시대를 초월한 예술의 가치를 담아내는 공간,<br />
+            생각을 뛰어넘다, 시대를 뛰어넘다.<br />
             갤러리 에포크입니다.
           </p>
         </motion.div>
@@ -240,19 +240,17 @@ export default function AboutPage() {
             </h2>
             <div className="space-y-6 text-[#ccc5b9] leading-relaxed">
               <p>
-                2010년 서울 삼청동에 문을 연 갤러리 에포크는 동시대 예술의 흐름을 
+                2025년 서울 삼청동에 문을 연 갤러리 에포크는 동시대 예술의 흐름을 
                 선도하며 신진 작가와 기성 작가의 작품을 폭넓게 소개하고 있습니다.
               </p>
               <p>
-                1,200제곱미터의 넓은 전시 공간은 자연광이 유입되는 아트리움, 
-                미디어아트를 위한 블랙박스 룸, 그리고 프라이빗 컬렉션 룸으로 구성되어 
+                1층 10평, 2층 10평의 예쁜 전시 공간에서 
                 다양한 형태의 예술 작품을 최적의 환경에서 선보일 수 있습니다.
               </p>
               <p>
                 우리는 단순히 작품을 전시하는 것을 넘어, 작가와 관람객이 깊이 있는 
-                대화를 나눌 수 있는 문화 플랫폼이 되고자 합니다. 정기적인 아티스트 토크, 
-                큐레이터 투어, 그리고 교육 프로그램을 통해 예술을 더 가까이에서 
-                경험할 수 있는 기회를 제공합니다.
+                대화를 나눌 수 있는 문화 플랫폼이 되고자 합니다. 정기적인 아티스트 토크를 
+                통해 예술을 더 가까이에서 경험할 수 있는 기회를 제공합니다.
               </p>
             </div>
           </motion.div>
@@ -271,26 +269,13 @@ export default function AboutPage() {
             />
             <div className="absolute -bottom-8 -left-8 bg-[#7c8d4c] p-8 rounded-lg max-w-xs hidden md:block">
               <p className="text-[#f8f4e3] font-[var(--font-cormorant)] text-xl italic">
-                "예술은 시대를 비추는 거울이자, 미래를 향한 창입니다."
+                <p>생각을 뛰어넘다</p>
+                <p> 시대를 뛰어넘다</p>
               </p>
               <p className="text-[#f8f4e3]/70 text-sm mt-4">— 갤러리 에포크 철학</p>
             </div>
           </motion.div>
         </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="px-8 md:px-24 py-20 bg-[#1a1c1a]">
-        <motion.h2
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="text-center text-2xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-16"
-        >
-          Gallery Époque in Numbers
-        </motion.h2>
-        <Stats />
       </section>
 
       {/* Facilities Section */}

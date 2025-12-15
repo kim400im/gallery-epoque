@@ -8,38 +8,6 @@ import { Link } from '@/i18n/navigation';
 import Navigation from '../components/Navigation';
 import HeroSlider, { SlideData, TransitionEffect } from '../components/HeroSlider';
 
-// 목업 슬라이드 데이터 (나중에 API 데이터로 교체 가능)
-const mockSlides: SlideData[] = [
-  {
-    id: '1',
-    title: 'Eternal Reflections',
-    subtitle: 'Solo Exhibition',
-    imageUrl: 'https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=1920&q=80',
-    date: '2024.12.01 - 2025.01.15',
-  },
-  {
-    id: '2',
-    title: 'Abstract Horizons',
-    subtitle: 'Group Exhibition',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1920&q=80',
-    date: '2025.01.20 - 2025.02.28',
-  },
-  {
-    id: '3',
-    title: 'Light & Shadow',
-    subtitle: 'Photography Exhibition',
-    imageUrl: 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1920&q=80',
-    date: '2025.03.01 - 2025.04.15',
-  },
-  {
-    id: '4',
-    title: 'Contemporary Visions',
-    subtitle: 'New Media Art',
-    imageUrl: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=1920&q=80',
-    date: '2025.04.20 - 2025.05.30',
-  },
-];
-
 // 슬라이더 효과 설정 (여기서 변경 가능: 'slide' | 'fade' | 'zoom')
 const SLIDER_EFFECT: TransitionEffect = 'fade';
 
@@ -67,28 +35,30 @@ function ExhibitionCard({ exhibition, index }: { exhibition: Exhibition, index: 
     : '';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      viewport={{ once: true }}
-      className="group cursor-pointer"
-    >
-      <div className="relative overflow-hidden rounded-lg aspect-[3/4] mb-4">
-        <img
-          src={exhibition.imageUrl}
-          alt={exhibition.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/80 via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <p className="text-[#d4af37] text-sm mb-2">{dateRange}</p>
-          <h3 className="text-[#f8f4e3] text-xl font-[var(--font-cormorant)] font-medium mb-1">
-            {exhibition.title}
-          </h3>
+    <Link href={`/exhibition/${exhibition.id}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: index * 0.1 }}
+        viewport={{ once: true }}
+        className="group cursor-pointer"
+      >
+        <div className="relative overflow-hidden rounded-lg aspect-[3/4] mb-4">
+          <img
+            src={exhibition.imageUrl}
+            alt={exhibition.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/80 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6">
+            <p className="text-[#d4af37] text-sm mb-2">{dateRange}</p>
+            <h3 className="text-[#f8f4e3] text-xl font-[var(--font-cormorant)] font-medium mb-1">
+              {exhibition.title}
+            </h3>
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </Link>
   );
 }
 
@@ -159,7 +129,25 @@ export default function GalleryLanding() {
   const [currentExhibitions, setCurrentExhibitions] = useState<Exhibition[]>([]);
   const [pastExhibitions, setPastExhibitions] = useState<Exhibition[]>([]);
   const [upcomingExhibitions, setUpcomingExhibitions] = useState<Exhibition[]>([]);
+  const [homeSlides, setHomeSlides] = useState<SlideData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 홈 이미지 가져오기
+    const fetchHomeImages = async () => {
+      try {
+        const response = await fetch('/api/home-images');
+        if (response.ok) {
+          const data: SlideData[] = await response.json();
+          setHomeSlides(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch home images:', error);
+      }
+    };
+
+    fetchHomeImages();
+  }, []);
 
   useEffect(() => {
     const fetchExhibitions = async () => {
@@ -195,6 +183,20 @@ export default function GalleryLanding() {
             }
           });
 
+          // 과거 전시: 종료일 기준 내림차순 정렬 (최신 종료 전시가 먼저)
+          past.sort((a, b) => {
+            const dateA = a.endDate ? new Date(a.endDate).getTime() : 0;
+            const dateB = b.endDate ? new Date(b.endDate).getTime() : 0;
+            return dateB - dateA;
+          });
+
+          // 예정 전시: 시작일 기준 오름차순 정렬 (가장 빨리 시작하는 전시가 먼저)
+          upcoming.sort((a, b) => {
+            const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+            const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+            return dateA - dateB;
+          });
+
           setCurrentExhibitions(current);
           setPastExhibitions(past);
           setUpcomingExhibitions(upcoming);
@@ -216,7 +218,7 @@ export default function GalleryLanding() {
         {/* 슬라이더 배경 */}
         <div className="absolute inset-0 z-0">
           <HeroSlider 
-            slides={mockSlides} 
+            slides={homeSlides} 
             effect={SLIDER_EFFECT}
             autoPlay={true}
             interval={5000}

@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Image as ImageIcon, GripVertical } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 import ExhibitionModal from './ExhibitionModal'
 import ArtistModal from './ArtistModal'
+import HomeImageModal from './HomeImageModal'
 
 type Artist = {
   id: string
@@ -18,6 +19,21 @@ type ExhibitionImage = {
   displayOrder: number
 }
 
+type HomeImage = {
+  id: string
+  imageUrl: string
+  title: string | null
+  subtitle: string | null
+  displayOrder: number
+  isActive: boolean
+}
+
+type ExhibitionArtist = {
+  id: string
+  artistId: string
+  artist: Artist
+}
+
 type Exhibition = {
   id: string
   title: string
@@ -25,8 +41,7 @@ type Exhibition = {
   startDate: string
   endDate: string
   createdAt: string
-  artistId?: string | null
-  artist?: Artist | null
+  artists?: ExhibitionArtist[]
   images?: ExhibitionImage[]
 }
 
@@ -37,13 +52,16 @@ type Props = {
 export default function AdminDashboard({ userEmail }: Props) {
   const [isExhibitionModalOpen, setIsExhibitionModalOpen] = useState(false)
   const [isArtistModalOpen, setIsArtistModalOpen] = useState(false)
+  const [isHomeImageModalOpen, setIsHomeImageModalOpen] = useState(false)
   const [editingExhibition, setEditingExhibition] = useState<Exhibition | null>(null)
   const [editingArtist, setEditingArtist] = useState<Artist | null>(null)
+  const [editingHomeImage, setEditingHomeImage] = useState<HomeImage | null>(null)
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([])
   const [artists, setArtists] = useState<Artist[]>([])
+  const [homeImages, setHomeImages] = useState<HomeImage[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'exhibitions' | 'artists'>('exhibitions')
+  const [activeTab, setActiveTab] = useState<'exhibitions' | 'artists' | 'homeImages'>('exhibitions')
 
   // 전시회 목록 불러오기
   const fetchExhibitions = async () => {
@@ -71,8 +89,21 @@ export default function AdminDashboard({ userEmail }: Props) {
     }
   }
 
+  // 홈 이미지 목록 불러오기 (관리자용 - 모든 이미지)
+  const fetchHomeImages = async () => {
+    try {
+      const response = await fetch('/api/home-images/admin')
+      if (response.ok) {
+        const data = await response.json()
+        setHomeImages(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch home images:', error)
+    }
+  }
+
   useEffect(() => {
-    Promise.all([fetchExhibitions(), fetchArtists()]).finally(() => setLoading(false))
+    Promise.all([fetchExhibitions(), fetchArtists(), fetchHomeImages()]).finally(() => setLoading(false))
   }, [])
 
   // 전시회 핸들러
@@ -181,6 +212,58 @@ export default function AdminDashboard({ userEmail }: Props) {
     }
   }
 
+  // 홈 이미지 핸들러
+  const handleHomeImageCreated = (image: HomeImage) => {
+    setHomeImages(prev => [...prev, image])
+  }
+
+  const handleHomeImageUpdated = (image: HomeImage) => {
+    setHomeImages(prev => prev.map(i => i.id === image.id ? image : i))
+  }
+
+  const handleEditHomeImage = (image: HomeImage) => {
+    setEditingHomeImage(image)
+    setIsHomeImageModalOpen(true)
+  }
+
+  const handleDeleteHomeImage = async (id: string) => {
+    if (!confirm('정말로 이 이미지를 삭제하시겠습니까?')) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const response = await fetch(`/api/home-images?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setHomeImages(prev => prev.filter(i => i.id !== id))
+      } else {
+        const data = await response.json()
+        alert(data.error || '삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Failed to delete home image:', error)
+      alert('삭제에 실패했습니다.')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleHomeImageModalClose = () => {
+    setIsHomeImageModalOpen(false)
+    setEditingHomeImage(null)
+  }
+
+  const handleHomeImageModalSuccess = (image: HomeImage) => {
+    if (editingHomeImage) {
+      handleHomeImageUpdated(image)
+    } else {
+      handleHomeImageCreated(image)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
@@ -281,6 +364,19 @@ export default function AdminDashboard({ userEmail }: Props) {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('homeImages')}
+              className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                activeTab === 'homeImages'
+                  ? 'text-[#7c8d4c]'
+                  : 'text-[#ccc5b9] hover:text-[#f8f4e3]'
+              }`}
+            >
+              홈 화면 관리
+              {activeTab === 'homeImages' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -359,9 +455,9 @@ export default function AdminDashboard({ userEmail }: Props) {
                         <h4 className="text-[#f8f4e3] font-medium mb-1">
                           {exhibition.title}
                         </h4>
-                        {exhibition.artist && (
+                        {exhibition.artists && exhibition.artists.length > 0 && (
                           <p className="text-[#7c8d4c] text-sm mb-2">
-                            {exhibition.artist.name}
+                            {exhibition.artists.map(ea => ea.artist.name).join(', ')}
                           </p>
                         )}
                         <p className="text-[#ccc5b9] text-sm">
@@ -446,6 +542,97 @@ export default function AdminDashboard({ userEmail }: Props) {
             )}
           </div>
         )}
+
+        {/* 홈 화면 관리 탭 */}
+        {activeTab === 'homeImages' && (
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-lg text-[#f8f4e3]">홈 슬라이더 이미지</h3>
+                <p className="text-[#ccc5b9] text-sm mt-1">홈 화면에 표시될 슬라이더 이미지를 관리합니다.</p>
+              </div>
+              <button
+                onClick={() => setIsHomeImageModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#7c8d4c] text-[#f8f4e3] rounded-lg hover:bg-[#6a7a40] transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                이미지 등록
+              </button>
+            </div>
+
+            {/* 홈 이미지 목록 */}
+            {loading ? (
+              <div className="text-[#ccc5b9] text-center py-12">로딩 중...</div>
+            ) : homeImages.length === 0 ? (
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-12 text-center">
+                <ImageIcon className="w-12 h-12 text-[#7c8d4c]/50 mx-auto mb-4" />
+                <p className="text-[#ccc5b9] mb-4">등록된 홈 이미지가 없습니다.</p>
+                <button
+                  onClick={() => setIsHomeImageModalOpen(true)}
+                  className="text-[#7c8d4c] hover:text-[#d4af37] transition-colors"
+                >
+                  첫 이미지를 등록해보세요
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {homeImages.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className={`bg-[#1a1c1a] border rounded-lg overflow-hidden group ${
+                      image.isActive ? 'border-[#7c8d4c]/20' : 'border-red-500/30 opacity-60'
+                    }`}
+                  >
+                    <div className="relative">
+                      <img
+                        src={image.imageUrl}
+                        alt={image.title || '홈 이미지'}
+                        className="w-full h-48 object-cover"
+                      />
+                      {/* 순서 표시 */}
+                      <span className="absolute top-2 left-2 px-2 py-1 text-xs rounded bg-black/50 text-white flex items-center gap-1">
+                        <GripVertical className="w-3 h-3" />
+                        #{index + 1}
+                      </span>
+                      {/* 비활성화 표시 */}
+                      {!image.isActive && (
+                        <span className="absolute top-2 right-2 px-2 py-1 text-xs rounded bg-red-500/80 text-white">
+                          비활성
+                        </span>
+                      )}
+                      {/* 호버 시 액션 버튼 */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <button
+                          onClick={() => handleEditHomeImage(image)}
+                          className="p-2 bg-[#7c8d4c] text-white rounded-lg hover:bg-[#6a7a40] transition-colors"
+                          title="수정"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteHomeImage(image.id)}
+                          disabled={deleting === image.id}
+                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                          title="삭제"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h4 className="text-[#f8f4e3] font-medium mb-1">
+                        {image.title || 'Gallery Epoque'}
+                      </h4>
+                      <p className="text-[#ccc5b9] text-sm">
+                        {image.subtitle || 'Art & Culture'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* 전시회 등록/수정 모달 */}
@@ -463,6 +650,14 @@ export default function AdminDashboard({ userEmail }: Props) {
         onClose={handleArtistModalClose}
         onSuccess={handleArtistModalSuccess}
         editingArtist={editingArtist}
+      />
+
+      {/* 홈 이미지 등록/수정 모달 */}
+      <HomeImageModal
+        isOpen={isHomeImageModalOpen}
+        onClose={handleHomeImageModalClose}
+        onSuccess={handleHomeImageModalSuccess}
+        editingImage={editingHomeImage}
       />
     </div>
   )

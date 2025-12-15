@@ -162,7 +162,9 @@ export default function HeroSlider({
           >
             {/* 그라디언트 오버레이 */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#111311]/80 via-[#111311]/40 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/60 via-transparent to-[#111311]/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/60 via-transparent to-transparent" />
+            {/* 상단 네비게이션 영역 그라디언트 강화 */}
+            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#111311]/70 to-transparent" />
           </div>
         </motion.div>
       </AnimatePresence>

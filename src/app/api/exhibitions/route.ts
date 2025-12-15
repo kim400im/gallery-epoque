@@ -26,7 +26,11 @@ export async function GET() {
     const exhibitions = await prisma.exhibition.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        artist: true,
+        artists: {
+          include: {
+            artist: true
+          }
+        },
         images: {
           orderBy: { displayOrder: 'asc' }
         }
@@ -89,8 +93,11 @@ export async function POST(request: NextRequest) {
     const startDate = formData.get('startDate') as string
     const endDate = formData.get('endDate') as string
     const image = formData.get('image') as File
-    const artistId = formData.get('artistId') as string | null
+    const artistIdsJson = formData.get('artistIds') as string | null
     const additionalImages = formData.getAll('additionalImages') as File[]
+
+    // 작가 ID 배열 파싱
+    const artistIds: string[] = artistIdsJson ? JSON.parse(artistIdsJson) : []
 
     if (!title || !image || !startDate || !endDate) {
       return NextResponse.json(
@@ -102,14 +109,18 @@ export async function POST(request: NextRequest) {
     // 대표 이미지 업로드
     const imageUrl = await uploadImage(supabase, image, 'exhibitions')
 
-    // DB에 전시회 저장
+    // DB에 전시회 저장 (작가 관계 포함)
     const exhibition = await prisma.exhibition.create({
       data: {
         title,
         imageUrl,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        ...(artistId && { artistId })
+        artists: {
+          create: artistIds.map(artistId => ({
+            artistId
+          }))
+        }
       }
     })
 
@@ -133,7 +144,11 @@ export async function POST(request: NextRequest) {
     const exhibitionWithRelations = await prisma.exhibition.findUnique({
       where: { id: exhibition.id },
       include: {
-        artist: true,
+        artists: {
+          include: {
+            artist: true
+          }
+        },
         images: {
           orderBy: { displayOrder: 'asc' }
         }
@@ -170,9 +185,12 @@ export async function PUT(request: NextRequest) {
     const startDate = formData.get('startDate') as string
     const endDate = formData.get('endDate') as string
     const image = formData.get('image') as File | null
-    const artistId = formData.get('artistId') as string | null
+    const artistIdsJson = formData.get('artistIds') as string | null
     const additionalImages = formData.getAll('additionalImages') as File[]
     const deleteImageIds = formData.get('deleteImageIds') as string | null
+
+    // 작가 ID 배열 파싱
+    const artistIds: string[] = artistIdsJson ? JSON.parse(artistIdsJson) : []
 
     if (!id || !title || !startDate || !endDate) {
       return NextResponse.json(
@@ -201,6 +219,11 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // 기존 작가 관계 삭제 후 새로 생성
+    await prisma.exhibitionArtist.deleteMany({
+      where: { exhibitionId: id }
+    })
+
     // DB 업데이트
     const exhibition = await prisma.exhibition.update({
       where: { id },
@@ -208,8 +231,12 @@ export async function PUT(request: NextRequest) {
         title,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        artistId: artistId || null,
-        ...(imageUrl && { imageUrl })
+        ...(imageUrl && { imageUrl }),
+        artists: {
+          create: artistIds.map(artistId => ({
+            artistId
+          }))
+        }
       }
     })
 
@@ -241,7 +268,11 @@ export async function PUT(request: NextRequest) {
     const exhibitionWithRelations = await prisma.exhibition.findUnique({
       where: { id: exhibition.id },
       include: {
-        artist: true,
+        artists: {
+          include: {
+            artist: true
+          }
+        },
         images: {
           orderBy: { displayOrder: 'asc' }
         }

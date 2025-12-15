@@ -14,21 +14,39 @@ model Artist {
   name        String
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  exhibitions Exhibition[]
+  exhibitions ExhibitionArtist[]
+  // 기존 관계 유지 (마이그레이션 후 제거 예정)
+  oldExhibitions Exhibition[] @relation("OldArtistRelation")
 }
 
 // 전시회 모델
 model Exhibition {
-  id        String            @id @default(cuid())
-  title     String
-  imageUrl  String            // 대표 이미지
-  startDate DateTime          @default(now())
-  endDate   DateTime          @default(now())
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  artistId  String?
-  artist    Artist?           @relation(fields: [artistId], references: [id], onDelete: SetNull)
-  images    ExhibitionImage[]
+  id          String            @id @default(cuid())
+  title       String
+  description String?           // 전시회 설명 (선택사항)
+  imageUrl    String            // 대표 이미지
+  startDate   DateTime          @default(now())
+  endDate     DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  // 기존 필드 유지 (마이그레이션 후 제거 예정)
+  artistId    String?
+  artist      Artist?           @relation("OldArtistRelation", fields: [artistId], references: [id], onDelete: SetNull)
+  // 새로운 다대다 관계
+  artists     ExhibitionArtist[]
+  images      ExhibitionImage[]
+}
+
+// 전시회-작가 다대다 관계 테이블
+model ExhibitionArtist {
+  id           String     @id @default(cuid())
+  exhibitionId String
+  artistId     String
+  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  artist       Artist     @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([exhibitionId, artistId])
 }
 
 // 전시회 추가 이미지 모델
@@ -39,4 +57,16 @@ model ExhibitionImage {
   createdAt    DateTime   @default(now())
   exhibitionId String
   exhibition   Exhibition @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+}
+
+// 홈 화면 슬라이더 이미지 모델
+model HomeImage {
+  id           String   @id @default(cuid())
+  imageUrl     String
+  title        String?  // 슬라이드 제목 (선택사항)
+  subtitle     String?  // 슬라이드 부제목 (선택사항)
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
