@@ -6,6 +6,8 @@ import { X, Upload, Loader2, Plus, Trash2 } from 'lucide-react'
 type Artist = {
   id: string
   name: string
+  biography: string | null
+  introduction: string | null
   createdAt: string
 }
 
@@ -24,6 +26,7 @@ type ExhibitionArtist = {
 type Exhibition = {
   id: string
   title: string
+  description: string | null
   imageUrl: string
   startDate: string
   endDate: string
@@ -42,6 +45,7 @@ type Props = {
 
 export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExhibition, artists }: Props) {
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([])
@@ -62,6 +66,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
   useEffect(() => {
     if (editingExhibition) {
       setTitle(editingExhibition.title)
+      setDescription(editingExhibition.description || '')
       setStartDate(editingExhibition.startDate ? editingExhibition.startDate.split('T')[0] : '')
       setEndDate(editingExhibition.endDate ? editingExhibition.endDate.split('T')[0] : '')
       setPreview(editingExhibition.imageUrl)
@@ -150,6 +155,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     try {
       const formData = new FormData()
       formData.append('title', title)
+      formData.append('description', description)
       formData.append('startDate', startDate)
       formData.append('endDate', endDate)
       
@@ -196,6 +202,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
 
   const handleClose = () => {
     setTitle('')
+    setDescription('')
     setStartDate('')
     setEndDate('')
     setSelectedArtistIds([])
@@ -209,8 +216,10 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     onClose()
   }
 
-  // 선택되지 않은 작가만 드롭다운에 표시
-  const availableArtists = artists.filter(artist => !selectedArtistIds.includes(artist.id))
+  // 선택되지 않은 작가만 드롭다운에 표시 (가나다순 정렬)
+  const availableArtists = artists
+    .filter(artist => !selectedArtistIds.includes(artist.id))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
   if (!isOpen) return null
 
@@ -254,34 +263,48 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             />
           </div>
 
+          <div>
+            <label htmlFor="description" className="block text-sm text-[#ccc5b9] mb-2">
+              전시 설명 <span className="text-[#7c8d4c]">(선택사항)</span>
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              className="w-full px-4 py-3 bg-[#111311] border border-[#7c8d4c]/30 rounded-lg text-[#f8f4e3] placeholder-[#ccc5b9]/50 focus:outline-none focus:border-[#7c8d4c] transition-colors resize-none"
+              placeholder="전시에 대한 설명을 입력하세요"
+            />
+          </div>
+
           {/* 작가 선택 (다중 선택) */}
           <div>
             <label htmlFor="artist" className="block text-sm text-[#ccc5b9] mb-2">
               작가 <span className="text-[#7c8d4c]">(여러 명 선택 가능)</span>
             </label>
             
-            {/* 선택된 작가들 표시 */}
+            {/* 선택된 작가들 표시 (가나다순 정렬) */}
             {selectedArtistIds.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
-                {selectedArtistIds.map(artistId => {
-                  const artist = artists.find(a => a.id === artistId)
-                  if (!artist) return null
-                  return (
+                {selectedArtistIds
+                  .map(artistId => artists.find(a => a.id === artistId))
+                  .filter((artist): artist is NonNullable<typeof artist> => artist !== undefined)
+                  .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+                  .map(artist => (
                     <span
-                      key={artistId}
+                      key={artist.id}
                       className="inline-flex items-center gap-1 px-3 py-1 bg-[#7c8d4c]/20 border border-[#7c8d4c]/30 rounded-full text-sm text-[#f8f4e3]"
                     >
                       {artist.name}
                       <button
                         type="button"
-                        onClick={() => removeSelectedArtist(artistId)}
+                        onClick={() => removeSelectedArtist(artist.id)}
                         className="hover:text-red-400 transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </span>
-                  )
-                })}
+                  ))}
               </div>
             )}
 

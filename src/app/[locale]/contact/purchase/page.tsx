@@ -5,6 +5,7 @@ import Navigation from '@/app/components/Navigation';
 
 export default function PurchasePage() {
   const t = useTranslations('nav');
+  const tc = useTranslations('common');
 
   return (
     <div className="min-h-screen bg-[#111311]">
@@ -13,7 +14,7 @@ export default function PurchasePage() {
         <h1 className="text-4xl md:text-6xl font-serif text-[#f8f4e3] mb-8">
           {t('purchaseInquiry')}
         </h1>
-        <p className="text-[#ccc5b9]">Coming soon...</p>
+        <p className="text-[#ccc5b9]">{tc('comingSoon')}...</p>
       </div>
     </div>
   );

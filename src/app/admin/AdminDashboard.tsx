@@ -1,15 +1,57 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Users, Image as ImageIcon, GripVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Image as ImageIcon, GripVertical, Calendar, Mail, Phone, Check, Ban, X, Bell, Paperclip, Star } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 import ExhibitionModal from './ExhibitionModal'
 import ArtistModal from './ArtistModal'
 import HomeImageModal from './HomeImageModal'
+import NoticeModal from './NoticeModal'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { ko } from 'date-fns/locale'
+
+type NoticeAttachment = {
+  id: string
+  fileName: string
+  fileUrl: string
+  fileSize: number | null
+  mimeType: string | null
+}
+
+type Notice = {
+  id: string
+  title: string
+  content: string
+  isFeatured: boolean
+  createdAt: string
+  attachments: NoticeAttachment[]
+}
+
+type BlockedDate = {
+  id: string
+  date: string
+  reason: string | null
+  type: string
+}
+
+type Booking = {
+  id: string
+  name: string
+  phone: string
+  email: string
+  startDate: string
+  endDate: string
+  message: string | null
+  isRead: boolean
+  createdAt: string
+}
 
 type Artist = {
   id: string
   name: string
+  biography: string | null
+  introduction: string | null
   createdAt: string
 }
 
@@ -37,6 +79,7 @@ type ExhibitionArtist = {
 type Exhibition = {
   id: string
   title: string
+  description: string | null
   imageUrl: string
   startDate: string
   endDate: string
@@ -53,15 +96,115 @@ export default function AdminDashboard({ userEmail }: Props) {
   const [isExhibitionModalOpen, setIsExhibitionModalOpen] = useState(false)
   const [isArtistModalOpen, setIsArtistModalOpen] = useState(false)
   const [isHomeImageModalOpen, setIsHomeImageModalOpen] = useState(false)
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false)
   const [editingExhibition, setEditingExhibition] = useState<Exhibition | null>(null)
   const [editingArtist, setEditingArtist] = useState<Artist | null>(null)
   const [editingHomeImage, setEditingHomeImage] = useState<HomeImage | null>(null)
+  const [editingNotice, setEditingNotice] = useState<Notice | null>(null)
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([])
   const [artists, setArtists] = useState<Artist[]>([])
   const [homeImages, setHomeImages] = useState<HomeImage[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [notices, setNotices] = useState<Notice[]>([])
+  const [noticePage, setNoticePage] = useState(1)
+  const [noticeTotalPages, setNoticeTotalPages] = useState(1)
+  const [noticeTotal, setNoticeTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'exhibitions' | 'artists' | 'homeImages'>('exhibitions')
+  const [activeTab, setActiveTab] = useState<'exhibitions' | 'artists' | 'homeImages' | 'bookings' | 'blockedDates' | 'notices'>('exhibitions')
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([])
+  const [allUnavailableDates, setAllUnavailableDates] = useState<Date[]>([]) // 모든 예약 불가 날짜 (전시 + 차단)
+  const [selectedDates, setSelectedDates] = useState<Date[]>([])
+  const [blockReason, setBlockReason] = useState('')
+  const [isBlocking, setIsBlocking] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const fetchNotices = async (page = 1) => {
+    try {
+      const response = await fetch(`/api/notices?page=${page}`)
+      if (response.ok) {
+        const data = await response.json()
+        setNotices(data.notices)
+        setNoticePage(data.page)
+        setNoticeTotalPages(data.totalPages)
+        setNoticeTotal(data.total)
+      }
+    } catch (error) {
+      console.error('Failed to fetch notices:', error)
+    }
+  }
+
+  const handleNoticeCreated = (notice: Notice) => {
+    setNotices((prev) => [notice, ...prev])
+    setNoticeTotal((t) => t + 1)
+  }
+
+  const handleNoticeUpdated = (notice: Notice) => {
+    setNotices((prev) => prev.map((n) => (n.id === notice.id ? notice : n)))
+  }
+
+  const handleEditNotice = (notice: Notice) => {
+    setEditingNotice(notice)
+    setIsNoticeModalOpen(true)
+  }
+
+  const handleDeleteNotice = async (id: string) => {
+    if (!confirm('이 공지사항을 삭제하시겠습니까?')) return
+    setDeleting(id)
+    try {
+      const response = await fetch(`/api/notices?id=${id}`, { method: 'DELETE' })
+      if (response.ok) {
+        setNotices((prev) => prev.filter((n) => n.id !== id))
+        setNoticeTotal((t) => t - 1)
+      } else {
+        const data = await response.json()
+        alert(data.error || '삭제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Failed to delete notice:', error)
+      alert('삭제에 실패했습니다.')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handleNoticeModalClose = () => {
+    setIsNoticeModalOpen(false)
+    setEditingNotice(null)
+  }
+
+  const handleToggleFeatured = async (notice: Notice) => {
+    try {
+      if (notice.isFeatured) {
+        const res = await fetch('/api/notices/featured', { method: 'DELETE' })
+        if (res.ok) {
+          setNotices((prev) => prev.map((n) => ({ ...n, isFeatured: false })))
+        }
+      } else {
+        const res = await fetch('/api/notices/featured', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: notice.id }),
+        })
+        if (res.ok) {
+          setNotices((prev) =>
+            prev.map((n) => ({ ...n, isFeatured: n.id === notice.id }))
+          )
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle featured:', error)
+      alert('메인 노출 설정에 실패했습니다.')
+    }
+  }
+
+  const handleNoticeModalSuccess = (notice: Notice) => {
+    if (editingNotice) {
+      handleNoticeUpdated(notice)
+    } else {
+      handleNoticeCreated(notice)
+    }
+  }
 
   // 전시회 목록 불러오기
   const fetchExhibitions = async () => {
@@ -102,8 +245,53 @@ export default function AdminDashboard({ userEmail }: Props) {
     }
   }
 
+  // 예약 목록 불러오기
+  const fetchBookings = async () => {
+    try {
+      const response = await fetch('/api/bookings')
+      if (response.ok) {
+        const data = await response.json()
+        setBookings(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error)
+    }
+  }
+
+  // 차단된 날짜 목록 불러오기 (관리자가 수동으로 차단한 것만)
+  const fetchBlockedDates = async () => {
+    try {
+      const response = await fetch('/api/bookings/unavailable-dates/admin')
+      if (response.ok) {
+        const data = await response.json()
+        setBlockedDates(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch blocked dates:', error)
+    }
+  }
+
+  // 모든 예약 불가 날짜 불러오기 (전시 + 관리자 차단 모두)
+  const fetchAllUnavailableDates = async () => {
+    try {
+      const response = await fetch('/api/bookings/unavailable-dates')
+      if (response.ok) {
+        const data = await response.json()
+        // 문자열 날짜를 Date 객체로 변환
+        const dates = data.unavailableDates.map((dateStr: string) => {
+          const d = new Date(dateStr)
+          d.setHours(0, 0, 0, 0)
+          return d
+        })
+        setAllUnavailableDates(dates)
+      }
+    } catch (error) {
+      console.error('Failed to fetch all unavailable dates:', error)
+    }
+  }
+
   useEffect(() => {
-    Promise.all([fetchExhibitions(), fetchArtists(), fetchHomeImages()]).finally(() => setLoading(false))
+    Promise.all([fetchExhibitions(), fetchArtists(), fetchHomeImages(), fetchBookings(), fetchBlockedDates(), fetchAllUnavailableDates(), fetchNotices()]).finally(() => setLoading(false))
   }, [])
 
   // 전시회 핸들러
@@ -264,6 +452,70 @@ export default function AdminDashboard({ userEmail }: Props) {
     }
   }
 
+  // 로컬 날짜를 YYYY-MM-DD 형식으로 변환 (시간대 문제 방지)
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // 날짜 차단 핸들러
+  const handleBlockDates = async () => {
+    if (selectedDates.length === 0) {
+      alert('차단할 날짜를 선택해주세요.')
+      return
+    }
+
+    setIsBlocking(true)
+    try {
+      const response = await fetch('/api/bookings/unavailable-dates/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dates: selectedDates.map(d => formatLocalDate(d)),
+          reason: blockReason || '관리자 차단'
+        })
+      })
+
+      if (response.ok) {
+        await fetchBlockedDates()
+        await fetchAllUnavailableDates()
+        setSelectedDates([])
+        setBlockReason('')
+        alert('날짜가 차단되었습니다.')
+      } else {
+        const data = await response.json()
+        alert(data.error || '날짜 차단에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Failed to block dates:', error)
+      alert('날짜 차단에 실패했습니다.')
+    } finally {
+      setIsBlocking(false)
+    }
+  }
+
+  const handleUnblockDate = async (id: string) => {
+    if (!confirm('이 날짜의 차단을 해제하시겠습니까?')) return
+
+    try {
+      const response = await fetch(`/api/bookings/unavailable-dates/admin?id=${id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setBlockedDates(prev => prev.filter(d => d.id !== id))
+        await fetchAllUnavailableDates()
+      } else {
+        alert('차단 해제에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('Failed to unblock date:', error)
+      alert('차단 해제에 실패했습니다.')
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
@@ -329,9 +581,19 @@ export default function AdminDashboard({ userEmail }: Props) {
             <h3 className="text-[#ccc5b9] text-sm mb-2">작가 수</h3>
             <p className="text-[#f8f4e3] text-2xl font-semibold">{artists.length}명</p>
           </div>
-          <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6">
+          <div 
+            className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6 cursor-pointer hover:border-[#7c8d4c]/40 transition-colors"
+            onClick={() => setActiveTab('bookings')}
+          >
             <h3 className="text-[#ccc5b9] text-sm mb-2">예약 요청</h3>
-            <p className="text-[#f8f4e3] text-2xl font-semibold">0건</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[#f8f4e3] text-2xl font-semibold">{bookings.length}건</p>
+              {bookings.filter(b => !b.isRead).length > 0 && (
+                <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {bookings.filter(b => !b.isRead).length} 새 요청
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -374,6 +636,52 @@ export default function AdminDashboard({ userEmail }: Props) {
             >
               홈 화면 관리
               {activeTab === 'homeImages' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-2 ${
+                activeTab === 'bookings'
+                  ? 'text-[#7c8d4c]'
+                  : 'text-[#ccc5b9] hover:text-[#f8f4e3]'
+              }`}
+            >
+              예약 관리
+              {bookings.filter(b => !b.isRead).length > 0 && (
+                <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {bookings.filter(b => !b.isRead).length}
+                </span>
+              )}
+              {activeTab === 'bookings' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('blockedDates')}
+              className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-2 ${
+                activeTab === 'blockedDates'
+                  ? 'text-[#7c8d4c]'
+                  : 'text-[#ccc5b9] hover:text-[#f8f4e3]'
+              }`}
+            >
+              <Ban className="w-4 h-4" />
+              날짜 차단
+              {activeTab === 'blockedDates' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('notices')}
+              className={`px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-2 ${
+                activeTab === 'notices'
+                  ? 'text-[#7c8d4c]'
+                  : 'text-[#ccc5b9] hover:text-[#f8f4e3]'
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              공지사항
+              {activeTab === 'notices' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7c8d4c]" />
               )}
             </button>
@@ -511,7 +819,7 @@ export default function AdminDashboard({ userEmail }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {artists.map((artist) => (
+                    {[...artists].sort((a, b) => a.name.localeCompare(b.name, 'ko')).map((artist) => (
                       <tr key={artist.id} className="border-b border-[#7c8d4c]/10 last:border-b-0">
                         <td className="text-[#f8f4e3] px-6 py-4">{artist.name}</td>
                         <td className="text-[#ccc5b9] text-sm px-6 py-4">{formatDate(artist.createdAt)}</td>
@@ -538,6 +846,122 @@ export default function AdminDashboard({ userEmail }: Props) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 예약 관리 탭 */}
+        {activeTab === 'bookings' && (
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-lg text-[#f8f4e3]">예약 요청 목록</h3>
+                <p className="text-[#ccc5b9] text-sm mt-1">공간 예약 문의 내역을 확인합니다.</p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-[#ccc5b9] text-center py-12">로딩 중...</div>
+            ) : bookings.length === 0 ? (
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-12 text-center">
+                <Calendar className="w-12 h-12 text-[#7c8d4c]/50 mx-auto mb-4" />
+                <p className="text-[#ccc5b9]">예약 요청이 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {bookings.map((booking) => (
+                  <div
+                    key={booking.id}
+                    className={`bg-[#1a1c1a] border rounded-lg p-6 ${
+                      booking.isRead 
+                        ? 'border-[#7c8d4c]/20' 
+                        : 'border-red-500/50 bg-red-500/5'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <h4 className={`text-lg font-medium ${booking.isRead ? 'text-[#f8f4e3]' : 'text-red-400'}`}>
+                          {booking.name}
+                        </h4>
+                        {!booking.isRead && (
+                          <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded">NEW</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!booking.isRead && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/bookings', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: booking.id, isRead: true })
+                                })
+                                if (response.ok) {
+                                  setBookings(prev => prev.map(b => 
+                                    b.id === booking.id ? { ...b, isRead: true } : b
+                                  ))
+                                }
+                              } catch (error) {
+                                console.error('Failed to mark as read:', error)
+                              }
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[#7c8d4c] text-white rounded hover:bg-[#6a7a40] transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                            읽음 처리
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!confirm('이 예약 요청을 삭제하시겠습니까?')) return
+                            try {
+                              const response = await fetch(`/api/bookings?id=${booking.id}`, {
+                                method: 'DELETE'
+                              })
+                              if (response.ok) {
+                                setBookings(prev => prev.filter(b => b.id !== booking.id))
+                              }
+                            } catch (error) {
+                              console.error('Failed to delete booking:', error)
+                            }
+                          }}
+                          className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-center gap-2 text-[#ccc5b9]">
+                        <Phone className="w-4 h-4" />
+                        <span>{booking.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[#ccc5b9]">
+                        <Mail className="w-4 h-4" />
+                        <span>{booking.email}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[#ccc5b9] mb-4">
+                      <Calendar className="w-4 h-4" />
+                      <span>
+                        대관 기간: {new Date(booking.startDate).toLocaleDateString('ko-KR')} ~ {new Date(booking.endDate).toLocaleDateString('ko-KR')}
+                      </span>
+                    </div>
+                    
+                    {booking.message && (
+                      <div className="bg-[#111311] rounded-lg p-4 mb-4">
+                        <p className="text-[#ccc5b9] text-sm whitespace-pre-wrap">{booking.message}</p>
+                      </div>
+                    )}
+                    
+                    <p className="text-[#7c8d4c]/60 text-xs">
+                      접수일: {new Date(booking.createdAt).toLocaleString('ko-KR')}
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -633,6 +1057,302 @@ export default function AdminDashboard({ userEmail }: Props) {
             )}
           </div>
         )}
+
+        {/* 날짜 차단 관리 탭 */}
+        {activeTab === 'blockedDates' && (
+          <div className="mt-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg text-[#f8f4e3]">예약 불가 날짜 관리</h3>
+                <p className="text-[#ccc5b9] text-sm mt-1">
+                  특정 날짜를 예약 불가능하도록 설정합니다. 전시 일정은 자동으로 차단됩니다.
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!confirm('기존 전시 일정을 기반으로 예약 불가 날짜를 동기화하시겠습니까?')) return
+                  setIsSyncing(true)
+                  try {
+                    const response = await fetch('/api/bookings/unavailable-dates/sync', {
+                      method: 'POST'
+                    })
+                    const data = await response.json()
+                    if (response.ok) {
+                      alert(data.message)
+                      await fetchBlockedDates()
+                      await fetchAllUnavailableDates()
+                    } else {
+                      alert(data.error || '동기화에 실패했습니다.')
+                    }
+                  } catch (error) {
+                    console.error('Failed to sync:', error)
+                    alert('동기화에 실패했습니다.')
+                  } finally {
+                    setIsSyncing(false)
+                  }
+                }}
+                disabled={isSyncing}
+                className="px-4 py-2 bg-[#7c8d4c]/20 text-[#7c8d4c] rounded-lg hover:bg-[#7c8d4c]/30 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSyncing && (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {isSyncing ? '동기화 중...' : '전시 일정 동기화'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* 날짜 선택 섹션 */}
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6">
+                <h4 className="text-[#f8f4e3] font-medium mb-4">날짜 차단하기</h4>
+                
+                <div className="mb-4">
+                  <label className="block text-[#ccc5b9] text-sm mb-2">차단할 날짜 선택</label>
+                  <DatePicker
+                    selected={null}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const dateStr = date.toISOString().split('T')[0]
+                        const exists = selectedDates.some(d => d.toISOString().split('T')[0] === dateStr)
+                        if (!exists) {
+                          setSelectedDates([...selectedDates, date])
+                        }
+                      }
+                    }}
+                    inline
+                    locale={ko}
+                    minDate={new Date()}
+                    highlightDates={selectedDates}
+                    excludeDates={allUnavailableDates}
+                    calendarClassName="admin-datepicker"
+                  />
+                </div>
+
+                {selectedDates.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-[#ccc5b9] text-sm mb-2">
+                      선택된 날짜 ({selectedDates.length}개)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDates
+                        .sort((a, b) => a.getTime() - b.getTime())
+                        .map((date, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-[#7c8d4c]/20 text-[#7c8d4c] text-sm rounded"
+                          >
+                            {date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                            <button
+                              onClick={() => setSelectedDates(prev => prev.filter((_, i) => i !== index))}
+                              className="hover:text-red-400"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <label className="block text-[#ccc5b9] text-sm mb-2">차단 사유 (선택)</label>
+                  <input
+                    type="text"
+                    value={blockReason}
+                    onChange={(e) => setBlockReason(e.target.value)}
+                    placeholder="예: 휴관, 내부 행사"
+                    className="w-full bg-[#111311] border border-[#7c8d4c]/30 text-[#f8f4e3] px-4 py-2 rounded-lg focus:outline-none focus:border-[#7c8d4c]"
+                  />
+                </div>
+
+                <button
+                  onClick={handleBlockDates}
+                  disabled={selectedDates.length === 0 || isBlocking}
+                  className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Ban className="w-4 h-4" />
+                  {isBlocking ? '처리 중...' : `${selectedDates.length}개 날짜 차단`}
+                </button>
+              </div>
+
+              {/* 차단된 날짜 목록 */}
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-6">
+                <h4 className="text-[#f8f4e3] font-medium mb-4">차단된 날짜 목록</h4>
+                
+                {blockedDates.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Ban className="w-12 h-12 text-[#7c8d4c]/30 mx-auto mb-4" />
+                    <p className="text-[#ccc5b9]">차단된 날짜가 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {blockedDates
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                      .map((blocked) => (
+                        <div
+                          key={blocked.id}
+                          className="flex items-center justify-between p-3 bg-[#111311] rounded-lg"
+                        >
+                          <div>
+                            <span className="text-[#f8f4e3]">
+                              {new Date(blocked.date).toLocaleDateString('ko-KR', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                weekday: 'short'
+                              })}
+                            </span>
+                            {blocked.reason && (
+                              <span className="text-[#ccc5b9] text-sm ml-2">
+                                - {blocked.reason}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleUnblockDate(blocked.id)}
+                            className="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                            title="차단 해제"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'notices' && (
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-lg text-[#f8f4e3]">공지사항 목록</h3>
+                <p className="text-[#ccc5b9] text-sm mt-1">전체 {noticeTotal}건</p>
+              </div>
+              <button
+                onClick={() => setIsNoticeModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#7c8d4c] text-[#f8f4e3] rounded-lg hover:bg-[#6a7a40] transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                공지사항 등록
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-[#ccc5b9] text-center py-12">로딩 중...</div>
+            ) : notices.length === 0 ? (
+              <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg p-12 text-center">
+                <Bell className="w-12 h-12 text-[#7c8d4c]/50 mx-auto mb-4" />
+                <p className="text-[#ccc5b9] mb-4">등록된 공지사항이 없습니다.</p>
+                <button
+                  onClick={() => setIsNoticeModalOpen(true)}
+                  className="text-[#7c8d4c] hover:text-[#d4af37] transition-colors"
+                >
+                  첫 공지사항을 등록해보세요
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg overflow-hidden">
+                  <table className="w-full">
+                     <thead>
+                       <tr className="border-b border-[#7c8d4c]/20">
+                         <th className="text-left text-[#ccc5b9] text-sm font-medium px-6 py-4">제목</th>
+                         <th className="text-center text-[#ccc5b9] text-sm font-medium px-4 py-4 hidden md:table-cell">첨부</th>
+                         <th className="text-center text-[#ccc5b9] text-sm font-medium px-4 py-4 hidden md:table-cell">메인 노출</th>
+                         <th className="text-left text-[#ccc5b9] text-sm font-medium px-6 py-4 hidden md:table-cell">등록일</th>
+                         <th className="text-right text-[#ccc5b9] text-sm font-medium px-6 py-4">관리</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {notices.map((notice) => (
+                         <tr key={notice.id} className="border-b border-[#7c8d4c]/10 last:border-b-0">
+                           <td className="px-6 py-4">
+                             <div className="flex items-center gap-2">
+                               <span className="text-[#f8f4e3] font-medium">{notice.title}</span>
+                               {notice.isFeatured && (
+                                 <span className="px-1.5 py-0.5 text-xs bg-[#d4af37]/20 text-[#d4af37] rounded">메인</span>
+                               )}
+                             </div>
+                           </td>
+                           <td className="px-4 py-4 hidden md:table-cell text-center">
+                             {notice.attachments.length > 0 ? (
+                               <span className="inline-flex items-center gap-1 text-[#7c8d4c] text-sm">
+                                 <Paperclip className="w-3 h-3" />
+                                 {notice.attachments.length}
+                               </span>
+                             ) : (
+                               <span className="text-[#ccc5b9]/40 text-sm">-</span>
+                             )}
+                           </td>
+                           <td className="px-4 py-4 hidden md:table-cell text-center">
+                             <button
+                               onClick={() => handleToggleFeatured(notice)}
+                               title={notice.isFeatured ? '메인 노출 해제' : '신진 작가 공모로 메인 노출'}
+                               className={`p-1.5 rounded-lg transition-colors ${
+                                 notice.isFeatured
+                                   ? 'text-[#d4af37] bg-[#d4af37]/10 hover:bg-[#d4af37]/20'
+                                   : 'text-[#ccc5b9]/40 hover:text-[#d4af37] hover:bg-[#d4af37]/10'
+                               }`}
+                             >
+                               <Star className={`w-4 h-4 ${notice.isFeatured ? 'fill-[#d4af37]' : ''}`} />
+                             </button>
+                           </td>
+                           <td className="text-[#ccc5b9] text-sm px-6 py-4 hidden md:table-cell">
+                             {formatDate(notice.createdAt)}
+                           </td>
+                           <td className="px-6 py-4">
+                             <div className="flex justify-end gap-2">
+                               <button
+                                 onClick={() => handleEditNotice(notice)}
+                                 className="p-2 text-[#7c8d4c] hover:bg-[#7c8d4c]/10 rounded-lg transition-colors"
+                                 title="수정"
+                               >
+                                 <Pencil className="w-4 h-4" />
+                               </button>
+                               <button
+                                 onClick={() => handleDeleteNotice(notice.id)}
+                                 disabled={deleting === notice.id}
+                                 className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                                 title="삭제"
+                               >
+                                 <Trash2 className="w-4 h-4" />
+                               </button>
+                             </div>
+                           </td>
+                         </tr>
+                       ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {noticeTotalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-6">
+                    <button
+                      onClick={() => { fetchNotices(noticePage - 1); setNoticePage(noticePage - 1) }}
+                      disabled={noticePage <= 1}
+                      className="px-3 py-1.5 text-sm border border-[#7c8d4c]/30 text-[#ccc5b9] rounded hover:bg-[#7c8d4c]/10 transition-colors disabled:opacity-30"
+                    >
+                      이전
+                    </button>
+                    <span className="text-[#ccc5b9] text-sm">{noticePage} / {noticeTotalPages}</span>
+                    <button
+                      onClick={() => { fetchNotices(noticePage + 1); setNoticePage(noticePage + 1) }}
+                      disabled={noticePage >= noticeTotalPages}
+                      className="px-3 py-1.5 text-sm border border-[#7c8d4c]/30 text-[#ccc5b9] rounded hover:bg-[#7c8d4c]/10 transition-colors disabled:opacity-30"
+                    >
+                      다음
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </main>
 
       {/* 전시회 등록/수정 모달 */}
@@ -652,12 +1372,18 @@ export default function AdminDashboard({ userEmail }: Props) {
         editingArtist={editingArtist}
       />
 
-      {/* 홈 이미지 등록/수정 모달 */}
       <HomeImageModal
         isOpen={isHomeImageModalOpen}
         onClose={handleHomeImageModalClose}
         onSuccess={handleHomeImageModalSuccess}
         editingImage={editingHomeImage}
+      />
+
+      <NoticeModal
+        isOpen={isNoticeModalOpen}
+        onClose={handleNoticeModalClose}
+        onSuccess={handleNoticeModalSuccess}
+        editingNotice={editingNotice}
       />
     </div>
   )

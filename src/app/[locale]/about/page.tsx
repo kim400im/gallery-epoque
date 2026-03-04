@@ -3,80 +3,27 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Navigation from '@/app/components/Navigation';
-
-// 갤러리 이미지 데이터
-const galleryImages = [
-  {
-    id: 1,
-    src: "/images/gallery/Gemini_Generated_Image_9p6nyw9p6nyw9p6n.png",
-    alt: "Gallery Interior 1",
-    caption: "1층 메인 전시홀"
-  },
-  {
-    id: 2,
-    src: "/images/gallery/Gemini_Generated_Image_ai47gyai47gyai47.png",
-    alt: "Gallery Interior 2",
-    caption: "2층 특별 전시실"
-  },
-  {
-    id: 3,
-    src: "/images/gallery/Gemini_Generated_Image_g0ngfg0ngfg0ngfg.png",
-    alt: "Gallery Interior 3",
-    caption: "자연광이 들어오는 아트리움"
-  },
-  {
-    id: 4,
-    src: "/images/gallery/Gemini_Generated_Image_i0co3i0co3i0co3i.png",
-    alt: "Gallery Interior 4",
-    caption: "프라이빗 컬렉션 룸"
-  },
-  {
-    id: 5,
-    src: "/images/gallery/Gemini_Generated_Image_lptfsrlptfsrlptf.png",
-    alt: "Gallery Interior 5",
-    caption: "아티스트 라운지"
-  },
-  {
-    id: 6,
-    src: "/images/gallery/Gemini_Generated_Image_mvhdt7mvhdt7mvhd.png",
-    alt: "Gallery Interior 6",
-    caption: "갤러리 외관"
-  },
-  {
-    id: 7,
-    src: "/images/gallery/Gemini_Generated_Image_ucbo3nucbo3nucbo.png",
-    alt: "Gallery Interior 7",
-    caption: "전시 공간"
-  },
-  {
-    id: 8,
-    src: "/images/gallery/Gemini_Generated_Image_ud7w9wud7w9wud7w.png",
-    alt: "Gallery Interior 8",
-    caption: "작품 전시실"
-  },
-  {
-    id: 9,
-    src: "/images/gallery/Gemini_Generated_Image_v4mn3lv4mn3lv4mn.png",
-    alt: "Gallery Interior 9",
-    caption: "휴식 공간"
-  },
-  {
-    id: 10,
-    src: "/images/gallery/Gemini_Generated_Image_xf9rr7xf9rr7xf9r.png",
-    alt: "Gallery Interior 10",
-    caption: "조명 시스템"
-  },
-  {
-    id: 11,
-    src: "/images/gallery/Gemini_Generated_Image_ygslw6ygslw6ygsl.png",
-    alt: "Gallery Interior 11",
-    caption: "아트리움 전경"
-  },
-];
 
 // 이미지 슬라이더 컴포넌트
 function ImageSlider() {
+  const t = useTranslations('about');
+  const galleryImages = [
+    {
+      id: 1,
+      src: "/images/gallery/out_02.png",
+      alt: "Gallery Exterior",
+      captionKey: "galleryExteriorCaption" as const
+    },
+    {
+      id: 2,
+      src: "/images/gallery/floor_2_02.jpg",
+      alt: "Gallery Interior",
+      captionKey: "floor2Caption" as const
+    },
+  ];
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextSlide = () => {
@@ -105,7 +52,7 @@ function ImageSlider() {
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#111311]/90 to-transparent p-8">
             <p className="text-[#f8f4e3] font-[var(--font-cormorant)] text-xl">
-              {galleryImages[currentIndex].caption}
+              {t(galleryImages[currentIndex].captionKey)}
             </p>
           </div>
         </motion.div>
@@ -143,11 +90,12 @@ function ImageSlider() {
 
 // 갤러리 통계 컴포넌트
 function Stats() {
+  const t = useTranslations('about');
   const stats = [
-    { number: "20", label: "전시 면적 (평)" },
-    { number: "150+", label: "누적 전시 작가" },
-    { number: "50+", label: "연간 전시 횟수" },
-    { number: "30,000+", label: "연간 방문객" },
+    { number: "20", labelKey: "statArea" as const },
+    { number: "150+", labelKey: "statArtists" as const },
+    { number: "50+", labelKey: "statExhibitions" as const },
+    { number: "30,000+", labelKey: "statVisitors" as const },
   ];
 
   return (
@@ -165,7 +113,7 @@ function Stats() {
             {stat.number}
           </div>
           <div className="text-[#ccc5b9] text-sm tracking-wider">
-            {stat.label}
+            {t(stat.labelKey)}
           </div>
         </motion.div>
       ))}
@@ -173,11 +121,25 @@ function Stats() {
   );
 }
 
+// 썸네일 갤러리 이미지 데이터
+const thumbnailImages = [
+  { id: 1, src: "/images/gallery/out_01.jpg", alt: "gallery-1" },
+  { id: 2, src: "/images/gallery/out_02.png", alt: "gallery-2" },
+  { id: 3, src: "/images/gallery/floor_1_01.jpg", alt: "gallery-3" },
+  { id: 4, src: "/images/gallery/floor_1_02.jpg", alt: "gallery-4" },
+  { id: 5, src: "/images/gallery/floor_1_03.jpg", alt: "gallery-5" },
+  { id: 6, src: "/images/gallery/floor_2_01.jpg", alt: "gallery-6" },
+  { id: 7, src: "/images/gallery/floor_2_02.jpg", alt: "gallery-7" },
+  { id: 8, src: "/images/gallery/floor_2_03.jpg", alt: "gallery-8" },
+  { id: 9, src: "/images/gallery/floor_2_04.jpg", alt: "gallery-9" },
+  { id: 10, src: "/images/gallery/step_01.jpg", alt: "gallery-10" },
+];
+
 // 썸네일 갤러리
 function ThumbnailGallery() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-      {galleryImages.map((image, index) => (
+      {thumbnailImages.map((image, index) => (
         <motion.div
           key={image.id}
           initial={{ opacity: 0, scale: 0.9 }}
@@ -198,6 +160,9 @@ function ThumbnailGallery() {
 }
 
 export default function AboutPage() {
+  const t = useTranslations('about');
+  const th = useTranslations('home');
+
   return (
     <div className="min-h-screen bg-[#111311]">
       <Navigation />
@@ -211,11 +176,10 @@ export default function AboutPage() {
           className="max-w-4xl"
         >
           <h1 className="text-5xl md:text-7xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-6">
-            About <span className="text-[#7c8d4c]">Gallery Époque</span>
+            {t('heroTitle')} <span className="text-[#7c8d4c]">{t('heroTitleHighlight')}</span>
           </h1>
-          <p className="text-xl md:text-2xl text-[#ccc5b9] font-light leading-relaxed">
-            생각을 뛰어넘다, 시대를 뛰어넘다.<br />
-            갤러리 에포크입니다.
+          <p className="text-xl md:text-2xl text-[#ccc5b9] font-light leading-relaxed whitespace-pre-line">
+            {t('heroSubtitle')}
           </p>
         </motion.div>
       </section>
@@ -235,23 +199,13 @@ export default function AboutPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl md:text-4xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-8">
-              예술과 공간이<br />
-              <span className="text-[#d4af37]">하나가 되는 곳</span>
+              {t('sectionTitle')}<br />
+              <span className="text-[#d4af37]">{t('sectionTitleHighlight')}</span>
             </h2>
             <div className="space-y-6 text-[#ccc5b9] leading-relaxed">
-              <p>
-                2025년 서울 삼청동에 문을 연 갤러리 에포크는 동시대 예술의 흐름을 
-                선도하며 신진 작가와 기성 작가의 작품을 폭넓게 소개하고 있습니다.
-              </p>
-              <p>
-                1층 10평, 2층 10평의 예쁜 전시 공간에서 
-                다양한 형태의 예술 작품을 최적의 환경에서 선보일 수 있습니다.
-              </p>
-              <p>
-                우리는 단순히 작품을 전시하는 것을 넘어, 작가와 관람객이 깊이 있는 
-                대화를 나눌 수 있는 문화 플랫폼이 되고자 합니다. 정기적인 아티스트 토크를 
-                통해 예술을 더 가까이에서 경험할 수 있는 기회를 제공합니다.
-              </p>
+              <p>{t('introP1')}</p>
+              <p>{t('introP2')}</p>
+              <p>{t('introP3')}</p>
             </div>
           </motion.div>
 
@@ -263,16 +217,16 @@ export default function AboutPage() {
             className="relative"
           >
             <img
-              src="/images/gallery/Gemini_Generated_Image_mvhdt7mvhdt7mvhd.png"
+              src="/images/gallery/floor_1_03.jpg"
               alt="Gallery Detail"
               className="w-full rounded-lg"
             />
             <div className="absolute -bottom-8 -left-8 bg-[#7c8d4c] p-8 rounded-lg max-w-xs hidden md:block">
               <p className="text-[#f8f4e3] font-[var(--font-cormorant)] text-xl italic">
-                <p>생각을 뛰어넘다</p>
-                <p> 시대를 뛰어넘다</p>
+                <span className="block">{t('motto1')}</span>
+                <span className="block">{t('motto2')}</span>
               </p>
-              <p className="text-[#f8f4e3]/70 text-sm mt-4">— 갤러리 에포크 철학</p>
+              <p className="text-[#f8f4e3]/70 text-sm mt-4">{t('mottoAttribution')}</p>
             </div>
           </motion.div>
         </div>
@@ -287,27 +241,27 @@ export default function AboutPage() {
           viewport={{ once: true }}
           className="text-3xl md:text-4xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-12 text-center"
         >
-          공간 구성
+          {t('facilitiesTitle')}
         </motion.h2>
         
         <div className="grid md:grid-cols-3 gap-8">
-          {[
+          {([
             {
-              title: "메인 전시홀",
-              description: "600m²의 넓은 공간에서 대규모 전시를 진행합니다. 5m 천장고와 가변형 조명 시스템을 갖추고 있습니다.",
-              image: "/images/gallery/Gemini_Generated_Image_9p6nyw9p6nyw9p6n.png"
+              titleKey: "facility1Title" as const,
+              descKey: "facility1Desc" as const,
+              image: "/images/gallery/floor_1_01.jpg"
             },
             {
-              title: "미디어아트 룸",
-              description: "프로젝션 매핑과 사운드 설치를 위한 블랙박스 공간입니다. 최신 AV 장비가 상설 구비되어 있습니다.",
-              image: "/images/gallery/Gemini_Generated_Image_ai47gyai47gyai47.png"
+              titleKey: "facility2Title" as const,
+              descKey: "facility2Desc" as const,
+              image: "/images/gallery/floor_2_01.jpg"
             },
             {
-              title: "프라이빗 갤러리",
-              description: "소규모 기획전과 VIP 프리뷰를 위한 공간입니다. 아늑한 분위기에서 작품을 감상할 수 있습니다.",
-              image: "/images/gallery/Gemini_Generated_Image_g0ngfg0ngfg0ngfg.png"
+              titleKey: "facility3Title" as const,
+              descKey: "facility3Desc" as const,
+              image: "/images/gallery/step_01.jpg"
             }
-          ].map((facility, index) => (
+          ]).map((facility, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 30 }}
@@ -319,15 +273,15 @@ export default function AboutPage() {
               <div className="overflow-hidden rounded-lg mb-6 aspect-[3/2]">
                 <img
                   src={facility.image}
-                  alt={facility.title}
+                  alt={t(facility.titleKey)}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
               <h3 className="text-xl font-[var(--font-cormorant)] text-[#d4af37] mb-3">
-                {facility.title}
+                {t(facility.titleKey)}
               </h3>
               <p className="text-[#ccc5b9] text-sm leading-relaxed">
-                {facility.description}
+                {t(facility.descKey)}
               </p>
             </motion.div>
           ))}
@@ -343,7 +297,7 @@ export default function AboutPage() {
           viewport={{ once: true }}
           className="text-3xl md:text-4xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-12 text-center"
         >
-          갤러리 전경
+          {t('galleryViewTitle')}
         </motion.h2>
         <ThumbnailGallery />
       </section>
@@ -352,15 +306,15 @@ export default function AboutPage() {
       <footer className="py-16 px-8 md:px-24 border-t border-[#7c8d4c]/20">
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-[#7c8d4c] font-[var(--font-cormorant)] text-2xl">
-            Gallery Époque
+            Gallery Epoque
           </div>
           <div className="text-[#ccc5b9] text-sm text-center md:text-right">
-            <p>서울특별시 종로구 삼청로 123-1</p>
+            <p>{th('footerAddress')}</p>
             <p className="mt-1">Tel. 02-723-3420 | galleryepoque@naver.com</p>
           </div>
         </div>
         <div className="mt-8 text-center text-[#7c8d4c]/50 text-xs">
-          © 2024 Gallery Époque. All rights reserved.
+          {th('footerCopyright')}
         </div>
       </footer>
     </div>

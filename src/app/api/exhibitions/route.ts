@@ -2,6 +2,59 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { prisma } from '@/lib/prisma'
 
+// YYYY-MM-DD 문자열을 UTC 정오 Date로 변환 (시간대 문제 방지)
+function parseToUTCNoon(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
+}
+
+// 날짜 범위에서 개별 날짜 배열 생성 (YYYY-MM-DD 문자열 기반)
+function getDatesBetweenStrings(startDateStr: string, endDateStr: string): Date[] {
+  const dates: Date[] = []
+  
+  const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number)
+  const [endYear, endMonth, endDay] = endDateStr.split('-').map(Number)
+  
+  const current = new Date(Date.UTC(startYear, startMonth - 1, startDay, 12, 0, 0, 0))
+  const end = new Date(Date.UTC(endYear, endMonth - 1, endDay, 12, 0, 0, 0))
+  
+  while (current <= end) {
+    dates.push(new Date(current))
+    current.setUTCDate(current.getUTCDate() + 1)
+  }
+  return dates
+}
+
+// 전시 기간에 해당하는 UnavailableDate 레코드 생성 (문자열 날짜 사용)
+async function createUnavailableDates(exhibitionId: string, title: string, startDateStr: string, endDateStr: string) {
+  const dates = getDatesBetweenStrings(startDateStr, endDateStr)
+  
+  for (const date of dates) {
+    // upsert를 사용하여 중복 방지
+    await prisma.unavailableDate.upsert({
+      where: { date },
+      update: {
+        reason: `전시: ${title}`,
+        type: 'exhibition',
+        exhibitionId
+      },
+      create: {
+        date,
+        reason: `전시: ${title}`,
+        type: 'exhibition',
+        exhibitionId
+      }
+    })
+  }
+}
+
+// 전시 관련 UnavailableDate 레코드 삭제
+async function deleteUnavailableDates(exhibitionId: string) {
+  await prisma.unavailableDate.deleteMany({
+    where: { exhibitionId }
+  })
+}
+
 // API Route용 Supabase 클라이언트 생성
 function createSupabaseClient(request: NextRequest) {
   return createServerClient(
@@ -90,13 +143,13 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const title = formData.get('title') as string
+    const description = (formData.get('description') as string) || null
     const startDate = formData.get('startDate') as string
     const endDate = formData.get('endDate') as string
     const image = formData.get('image') as File
     const artistIdsJson = formData.get('artistIds') as string | null
     const additionalImages = formData.getAll('additionalImages') as File[]
 
-    // 작가 ID 배열 파싱
     const artistIds: string[] = artistIdsJson ? JSON.parse(artistIdsJson) : []
 
     if (!title || !image || !startDate || !endDate) {
@@ -106,16 +159,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 대표 이미지 업로드
     const imageUrl = await uploadImage(supabase, image, 'exhibitions')
 
-    // DB에 전시회 저장 (작가 관계 포함)
     const exhibition = await prisma.exhibition.create({
       data: {
         title,
+        description: description?.trim() || null,
         imageUrl,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseToUTCNoon(startDate),
+        endDate: parseToUTCNoon(endDate),
         artists: {
           create: artistIds.map(artistId => ({
             artistId
@@ -139,6 +191,14 @@ export async function POST(request: NextRequest) {
         })
       }
     }
+
+    // 전시 기간에 해당하는 예약 불가 날짜 생성 (문자열로 전달)
+    await createUnavailableDates(
+      exhibition.id,
+      title,
+      startDate,
+      endDate
+    )
 
     // 전시회와 관련 데이터 함께 조회
     const exhibitionWithRelations = await prisma.exhibition.findUnique({
@@ -182,6 +242,7 @@ export async function PUT(request: NextRequest) {
     const formData = await request.formData()
     const id = formData.get('id') as string
     const title = formData.get('title') as string
+    const description = (formData.get('description') as string) || null
     const startDate = formData.get('startDate') as string
     const endDate = formData.get('endDate') as string
     const image = formData.get('image') as File | null
@@ -189,7 +250,6 @@ export async function PUT(request: NextRequest) {
     const additionalImages = formData.getAll('additionalImages') as File[]
     const deleteImageIds = formData.get('deleteImageIds') as string | null
 
-    // 작가 ID 배열 파싱
     const artistIds: string[] = artistIdsJson ? JSON.parse(artistIdsJson) : []
 
     if (!id || !title || !startDate || !endDate) {
@@ -224,13 +284,13 @@ export async function PUT(request: NextRequest) {
       where: { exhibitionId: id }
     })
 
-    // DB 업데이트
     const exhibition = await prisma.exhibition.update({
       where: { id },
       data: {
         title,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        description: description?.trim() || null,
+        startDate: parseToUTCNoon(startDate),
+        endDate: parseToUTCNoon(endDate),
         ...(imageUrl && { imageUrl }),
         artists: {
           create: artistIds.map(artistId => ({
@@ -263,6 +323,15 @@ export async function PUT(request: NextRequest) {
         })
       }
     }
+
+    // 기존 예약 불가 날짜 삭제 후 새로 생성 (날짜가 변경될 수 있으므로)
+    await deleteUnavailableDates(id)
+    await createUnavailableDates(
+      id,
+      title,
+      startDate,
+      endDate
+    )
 
     // 전시회와 관련 데이터 함께 조회
     const exhibitionWithRelations = await prisma.exhibition.findUnique({
@@ -312,6 +381,9 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // 전시 관련 예약 불가 날짜 먼저 삭제
+    await deleteUnavailableDates(id)
 
     await prisma.exhibition.delete({
       where: { id }

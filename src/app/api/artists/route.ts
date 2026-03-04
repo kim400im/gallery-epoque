@@ -20,11 +20,44 @@ function createSupabaseClient(request: NextRequest) {
   )
 }
 
+// 이미지 업로드 헬퍼 함수
+async function uploadImage(supabase: ReturnType<typeof createSupabaseClient>, image: File, folder: string): Promise<string> {
+  const arrayBuffer = await image.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+
+  const fileExt = image.name.split('.').pop()
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+  const filePath = `${folder}/${fileName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('gallery')
+    .upload(filePath, buffer, {
+      contentType: image.type,
+      cacheControl: '3600',
+      upsert: false
+    })
+
+  if (uploadError) {
+    throw new Error(`Failed to upload image: ${uploadError.message}`)
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('gallery')
+    .getPublicUrl(filePath)
+
+  return publicUrl
+}
+
 // GET: 작가 목록 조회
 export async function GET() {
   try {
     const artists = await prisma.artist.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { name: 'asc' },
+      include: {
+        images: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
     })
     return NextResponse.json(artists)
   } catch (error) {
@@ -50,8 +83,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { name } = body
+    const formData = await request.formData()
+    const name = formData.get('name') as string
+    const biography = formData.get('biography') as string | null
+    const introduction = formData.get('introduction') as string | null
+    const images = formData.getAll('images') as File[]
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -60,17 +96,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 작가 생성
     const artist = await prisma.artist.create({
       data: {
-        name: name.trim()
+        name: name.trim(),
+        biography: biography?.trim() || null,
+        introduction: introduction?.trim() || null
       }
     })
 
-    return NextResponse.json(artist, { status: 201 })
+    // 이미지 업로드 및 저장
+    if (images && images.length > 0) {
+      const validImages = images.filter(img => img && img.size > 0)
+      
+      for (let i = 0; i < validImages.length; i++) {
+        const imageUrl = await uploadImage(supabase, validImages[i], 'artists')
+        await prisma.artistImage.create({
+          data: {
+            imageUrl,
+            displayOrder: i,
+            artistId: artist.id
+          }
+        })
+      }
+    }
+
+    // 이미지 포함하여 반환
+    const artistWithImages = await prisma.artist.findUnique({
+      where: { id: artist.id },
+      include: {
+        images: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
+    })
+
+    return NextResponse.json(artistWithImages, { status: 201 })
   } catch (error) {
     console.error('Failed to create artist:', error)
     return NextResponse.json(
-      { error: 'Failed to create artist' },
+      { error: error instanceof Error ? error.message : 'Failed to create artist' },
       { status: 500 }
     )
   }
@@ -90,8 +155,13 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { id, name } = body
+    const formData = await request.formData()
+    const id = formData.get('id') as string
+    const name = formData.get('name') as string
+    const biography = formData.get('biography') as string | null
+    const introduction = formData.get('introduction') as string | null
+    const images = formData.getAll('images') as File[]
+    const deleteImageIds = formData.get('deleteImageIds') as string | null
 
     if (!id || !name || !name.trim()) {
       return NextResponse.json(
@@ -100,16 +170,68 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const artist = await prisma.artist.update({
+    // 삭제할 이미지 처리
+    if (deleteImageIds) {
+      const idsToDelete = JSON.parse(deleteImageIds) as string[]
+      if (idsToDelete.length > 0) {
+        await prisma.artistImage.deleteMany({
+          where: {
+            id: { in: idsToDelete },
+            artistId: id
+          }
+        })
+      }
+    }
+
+    // 작가 정보 업데이트
+    await prisma.artist.update({
       where: { id },
-      data: { name: name.trim() }
+      data: { 
+        name: name.trim(),
+        biography: biography?.trim() || null,
+        introduction: introduction?.trim() || null
+      }
     })
 
-    return NextResponse.json(artist)
+    // 새 이미지 업로드
+    if (images && images.length > 0) {
+      const validImages = images.filter(img => img && img.size > 0)
+      
+      // 기존 이미지의 최대 displayOrder 가져오기
+      const existingImages = await prisma.artistImage.findMany({
+        where: { artistId: id },
+        orderBy: { displayOrder: 'desc' },
+        take: 1
+      })
+      const maxOrder = existingImages.length > 0 ? existingImages[0].displayOrder : -1
+
+      for (let i = 0; i < validImages.length; i++) {
+        const imageUrl = await uploadImage(supabase, validImages[i], 'artists')
+        await prisma.artistImage.create({
+          data: {
+            imageUrl,
+            displayOrder: maxOrder + 1 + i,
+            artistId: id
+          }
+        })
+      }
+    }
+
+    // 이미지 포함하여 반환
+    const artistWithImages = await prisma.artist.findUnique({
+      where: { id },
+      include: {
+        images: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
+    })
+
+    return NextResponse.json(artistWithImages)
   } catch (error) {
     console.error('Failed to update artist:', error)
     return NextResponse.json(
-      { error: 'Failed to update artist' },
+      { error: error instanceof Error ? error.message : 'Failed to update artist' },
       { status: 500 }
     )
   }

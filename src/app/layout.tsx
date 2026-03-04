@@ -21,7 +21,7 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   metadataBase: new URL('https://galleryepoque.org'),
   title: {
-    default: '갤러리 에포크 | Gallery Epoque',
+    default: '갤러리 에포크 | Gallery Époque',
     template: '%s | 갤러리 에포크',
   },
   description: '서울 삼청동 갤러리 에포크 - 생각을 뛰어넘다, 시대를 뛰어넘다. 현대미술 전시, 신진 작가 소개, 갤러리 대관 서비스를 제공합니다.',

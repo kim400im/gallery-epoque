@@ -123,3 +123,103 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Admin DatePicker Styles */
+.admin-datepicker {
+  background-color: #111311 !important;
+  border: 1px solid rgba(124, 141, 76, 0.3) !important;
+  border-radius: 0.5rem !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  width: 100% !important;
+}
+
+.admin-datepicker .react-datepicker__month-container {
+  width: 100% !important;
+}
+
+.admin-datepicker .react-datepicker__header {
+  background-color: #1a1c1a !important;
+  border-bottom: 1px solid rgba(124, 141, 76, 0.2) !important;
+  padding: 1rem !important;
+}
+
+.admin-datepicker .react-datepicker__current-month {
+  color: #f8f4e3 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.admin-datepicker .react-datepicker__day-names {
+  display: flex !important;
+  justify-content: space-around !important;
+  margin-top: 0.5rem !important;
+}
+
+.admin-datepicker .react-datepicker__day-name {
+  color: #7c8d4c !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  width: 3rem !important;
+  line-height: 2.5rem !important;
+  margin: 0.15rem !important;
+}
+
+.admin-datepicker .react-datepicker__month {
+  margin: 0.5rem !important;
+}
+
+.admin-datepicker .react-datepicker__week {
+  display: flex !important;
+  justify-content: space-around !important;
+}
+
+.admin-datepicker .react-datepicker__day {
+  color: #ccc5b9 !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  line-height: 3rem !important;
+  font-size: 1rem !important;
+  margin: 0.15rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.admin-datepicker .react-datepicker__day:hover {
+  background-color: rgba(124, 141, 76, 0.3) !important;
+  color: #f8f4e3 !important;
+}
+
+.admin-datepicker .react-datepicker__day--selected,
+.admin-datepicker .react-datepicker__day--keyboard-selected {
+  background-color: #7c8d4c !important;
+  color: #f8f4e3 !important;
+}
+
+.admin-datepicker .react-datepicker__day--highlighted {
+  background-color: rgba(124, 141, 76, 0.5) !important;
+  color: #f8f4e3 !important;
+}
+
+.admin-datepicker .react-datepicker__day--disabled,
+.admin-datepicker .react-datepicker__day--excluded {
+  color: #444 !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  cursor: not-allowed !important;
+  text-decoration: line-through !important;
+}
+
+.admin-datepicker .react-datepicker__day--outside-month {
+  color: #333 !important;
+}
+
+.admin-datepicker .react-datepicker__navigation {
+  top: 1rem !important;
+}
+
+.admin-datepicker .react-datepicker__navigation-icon::before {
+  border-color: #7c8d4c !important;
+  border-width: 2px 2px 0 0 !important;
+  width: 10px !important;
+  height: 10px !important;
+}

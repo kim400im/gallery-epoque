@@ -50,6 +50,13 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    labelKey: 'notice',
+    href: '/notice',
+    subItems: [
+      { labelKey: 'noticeList', href: '/notice' },
+    ],
+  },
+  {
     labelKey: 'contact',
     href: '/contact',
     subItems: [
@@ -69,7 +76,7 @@ export default function Navigation() {
     <nav className="absolute top-0 left-0 w-full p-6 md:p-8 flex justify-between items-center z-50 text-[#f8f4e3] bg-[#111311]/60 backdrop-blur-md border-b border-[#7c8d4c]/10">
       {/* Logo */}
       <Link href="/" className="text-xl md:text-2xl font-serif font-bold tracking-widest uppercase text-[#7c8d4c]">
-        Gallery Epoque
+        Gallery Époque
       </Link>
 
       {/* Desktop Navigation */}
@@ -134,7 +141,7 @@ export default function Navigation() {
         >
           <SheetHeader>
             <SheetTitle className="text-[#7c8d4c] font-[var(--font-cormorant)] text-xl">
-              Gallery Epoque
+              Gallery Époque
             </SheetTitle>
           </SheetHeader>
           

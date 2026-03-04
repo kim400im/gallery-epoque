@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Environment, MeshTransmissionMaterial } from '@react-three/drei';
@@ -8,6 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Calendar, User, Phone, Mail, CheckCircle, ArrowRight } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import * as THREE from 'three';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ko } from 'date-fns/locale';
 
 // --- 3D Components: 고급스러운 추상 오브제 ---
 function ElegantShape({ position, color }: { position: [number, number, number], color: string }) {
@@ -16,7 +19,6 @@ function ElegantShape({ position, color }: { position: [number, number, number],
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
     if (mesh.current) {
-      // 천천히 우아하게 회전
       mesh.current.rotation.x = t * 0.1;
       mesh.current.rotation.y = t * 0.15;
     }
@@ -25,16 +27,15 @@ function ElegantShape({ position, color }: { position: [number, number, number],
   return (
     <Float speed={2} rotationIntensity={1} floatIntensity={1}>
       <mesh ref={mesh} position={position} scale={1.8}>
-        {/* 복잡한 굴절을 위한 TorusKnot 형태 */}
         <torusKnotGeometry args={[1, 0.3, 128, 16]} />
         <MeshTransmissionMaterial
           backside
           backsideThickness={3}
           thickness={2}
           roughness={0.05}
-          transmission={0.95} // 더 투명하게
+          transmission={0.95}
           ior={1.5}
-          chromaticAberration={0.4} // 빛 분산 효과
+          chromaticAberration={0.4}
           color={color}
           background={new THREE.Color('#111311')}
         />
@@ -49,12 +50,9 @@ function Scene3D() {
       <ambientLight intensity={0.5} color="#fff0e0" />
       <spotLight position={[10, 10, 10]} angle={0.2} penumbra={1} intensity={2} color="#ffecd1" castShadow />
       <spotLight position={[-10, -5, -5]} angle={0.5} penumbra={1} intensity={1} color="#7c8d4c" />
-      
-      {/* 화면 좌측을 채워줄 오브제 */}
       <group position={[-1, 0, 0]}>
         <ElegantShape position={[0, 0, 0]} color="#f2eadd" />
       </group>
-      
       <Environment preset="city" />
     </>
   );
@@ -70,16 +68,71 @@ export default function BookingPage() {
     name: '',
     email: '',
     phone: '',
-    date: '',
     message: ''
   });
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [unavailableDates, setUnavailableDates] = useState<Date[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 예약 불가능한 날짜 로드
+  useEffect(() => {
+    async function fetchUnavailableDates() {
+      try {
+        const response = await fetch('/api/bookings/unavailable-dates');
+        if (response.ok) {
+          const data = await response.json();
+          // 문자열 날짜를 Date 객체로 변환
+          const dates = data.unavailableDates.map((dateStr: string) => new Date(dateStr));
+          setUnavailableDates(dates);
+        }
+      } catch (error) {
+        console.error('Failed to fetch unavailable dates:', error);
+      }
+    }
+    fetchUnavailableDates();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => setIsSubmitted(true), 500); // 약간의 딜레이로 UX 향상
+    
+    if (!startDate || !endDate) {
+      alert(t('alertSelectDates'));
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          message: formData.message
+        }),
+      });
+
+      if (response.ok) {
+        setIsSubmitted(true);
+      } else {
+        alert(t('alertSubmitFail'));
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      alert(t('alertSubmitFail'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 입력 필드 렌더링 헬퍼 함수
@@ -87,13 +140,13 @@ export default function BookingPage() {
     id: string, 
     label: string, 
     type: string, 
-    Icon: any, 
+    Icon: React.ComponentType<{ className?: string }>, 
     placeholder: string
   ) => (
     <div className="relative group">
       <label 
         className={`absolute left-0 transition-all duration-300 pointer-events-none flex items-center gap-2 uppercase tracking-widest text-xs font-bold
-          ${focusedField === id || (formData as any)[id] ? '-top-5 text-[#d4af37] scale-90 origin-left' : 'top-3 text-[#7c8d4c]'}
+          ${focusedField === id || (formData as Record<string, string>)[id] ? '-top-5 text-[#d4af37] scale-90 origin-left' : 'top-3 text-[#7c8d4c]'}
         `}
       >
         <Icon className="w-3 h-3" /> {label}
@@ -105,19 +158,22 @@ export default function BookingPage() {
         onBlur={() => setFocusedField(null)}
         className="w-full bg-transparent border-b border-[#7c8d4c]/30 text-[#f8f4e3] text-lg py-3 outline-none transition-all focus:border-[#d4af37]"
         placeholder={focusedField === id ? placeholder : ''}
-        value={(formData as any)[id]}
+        value={(formData as Record<string, string>)[id]}
         onChange={(e) => setFormData({...formData, [id]: e.target.value})}
-        style={{ colorScheme: 'dark' }} // 달력 아이콘 다크모드
+        style={{ colorScheme: 'dark' }}
       />
-      {/* 포커스시 차오르는 바 효과 */}
       <div className={`absolute bottom-0 left-0 h-[1px] bg-[#d4af37] transition-all duration-500 ${focusedField === id ? 'w-full' : 'w-0'}`} />
     </div>
   );
 
+  // 오늘 날짜
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
     <div className="w-full min-h-screen bg-[#111311] text-[#f8f4e3] flex flex-col md:flex-row overflow-hidden relative">
       
-      {/* 1. Left Section: Visuals & Branding (PC에서만 크게 보임) */}
+      {/* 1. Left Section: Visuals & Branding */}
       <div className="hidden md:flex w-full md:w-5/12 h-screen sticky top-0 flex-col justify-between p-12 lg:p-16 border-r border-[#7c8d4c]/10 z-10 bg-[#111311]/50 backdrop-blur-sm">
         <div>
            <Link href={homePath} className="inline-flex items-center gap-2 text-[#ccc5b9] hover:text-[#d4af37] transition-colors text-xs tracking-[0.2em] uppercase mb-8 group">
@@ -137,7 +193,6 @@ export default function BookingPage() {
           </motion.p>
         </div>
 
-        {/* 3D Scene Container (Left Background) */}
         <div className="absolute inset-0 -z-10 pointer-events-none opacity-80">
            <Canvas camera={{ position: [0, 0, 6], fov: 40 }}>
              <Scene3D />
@@ -151,13 +206,12 @@ export default function BookingPage() {
 
       {/* 모바일용 헤더 */}
       <div className="md:hidden p-6 flex justify-between items-center bg-[#111311] z-20">
-         <div className="font-serif font-bold text-[#7c8d4c]">Lumière</div>
+         <div className="font-serif font-bold text-[#7c8d4c]">Gallery Époque</div>
          <Link href={homePath} className="text-xs text-[#ccc5b9]">{useTranslations('nav')('close')}</Link>
       </div>
 
       {/* 2. Right Section: The Form */}
       <div className="w-full md:w-7/12 min-h-screen relative flex items-center justify-center p-6 md:p-16 lg:p-24 bg-[#111311]">
-        {/* 은은한 배경 그라디언트 */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#7c8d4c]/5 rounded-full blur-[120px] pointer-events-none" />
         
         <AnimatePresence mode="wait">
@@ -178,7 +232,60 @@ export default function BookingPage() {
                   {renderInput('name', t('form.name'), 'text', User, t('form.namePlaceholder'))}
                   {renderInput('phone', t('form.phone'), 'tel', Phone, t('form.phonePlaceholder'))}
                   {renderInput('email', t('form.email'), 'email', Mail, t('form.emailPlaceholder'))}
-                  {renderInput('date', t('form.date'), 'date', Calendar, '')}
+                  
+                  {/* 대관 기간 선택 */}
+                  <div className="space-y-4">
+                    <label className="text-[#7c8d4c] text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                      <Calendar className="w-3 h-3" /> {t('form.date')}
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[#ccc5b9] text-xs mb-1 block">{t('startDate')}</label>
+                        <DatePicker
+                          selected={startDate}
+                          onChange={(date) => {
+                            setStartDate(date);
+                            // 시작일이 종료일보다 크면 종료일 초기화
+                            if (date && endDate && date > endDate) {
+                              setEndDate(null);
+                            }
+                          }}
+                          selectsStart
+                          startDate={startDate}
+                          endDate={endDate}
+                          minDate={today}
+                          excludeDates={unavailableDates}
+                          locale={locale === 'ko' ? ko : undefined}
+                          dateFormat="yyyy-MM-dd"
+                          placeholderText={t('dateSelectPlaceholder')}
+                          className="w-full bg-[#1a1c1a] border border-[#7c8d4c]/30 text-[#f8f4e3] py-3 px-4 rounded-lg outline-none focus:border-[#d4af37] transition-colors"
+                          calendarClassName="dark-calendar"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[#ccc5b9] text-xs mb-1 block">{t('endDate')}</label>
+                        <DatePicker
+                          selected={endDate}
+                          onChange={(date) => setEndDate(date)}
+                          selectsEnd
+                          startDate={startDate}
+                          endDate={endDate}
+                          minDate={startDate || today}
+                          excludeDates={unavailableDates}
+                          locale={locale === 'ko' ? ko : undefined}
+                          dateFormat="yyyy-MM-dd"
+                          placeholderText={t('dateSelectPlaceholder')}
+                          className="w-full bg-[#1a1c1a] border border-[#7c8d4c]/30 text-[#f8f4e3] py-3 px-4 rounded-lg outline-none focus:border-[#d4af37] transition-colors"
+                          calendarClassName="dark-calendar"
+                        />
+                      </div>
+                    </div>
+                    {unavailableDates.length > 0 && (
+                      <p className="text-[#ccc5b9]/60 text-xs">
+                        {t('unavailableNote')}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="relative group pt-4">
@@ -196,12 +303,15 @@ export default function BookingPage() {
 
                 <motion.button 
                   type="submit"
+                  disabled={isLoading || !startDate || !endDate}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
-                  className="group w-full bg-[#7c8d4c] hover:bg-[#6a7a40] text-[#f8f4e3] py-5 rounded-none flex items-center justify-between px-8 transition-all duration-300"
+                  className="group w-full bg-[#7c8d4c] hover:bg-[#6a7a40] text-[#f8f4e3] py-5 rounded-none flex items-center justify-between px-8 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="text-sm font-bold tracking-[0.2em] uppercase">{t('form.submit')}</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <span className="text-sm font-bold tracking-[0.2em] uppercase">
+                    {isLoading ? t('submitting') : t('form.submit')}
+                  </span>
+                  {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 </motion.button>
               </form>
             </motion.div>
@@ -234,6 +344,58 @@ export default function BookingPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* DatePicker 다크 테마 스타일 */}
+      <style jsx global>{`
+        .react-datepicker {
+          background-color: #1a1c1a !important;
+          border: 1px solid #7c8d4c !important;
+          font-family: inherit;
+        }
+        .react-datepicker__header {
+          background-color: #111311 !important;
+          border-bottom: 1px solid #7c8d4c30 !important;
+        }
+        .react-datepicker__current-month,
+        .react-datepicker__day-name {
+          color: #f8f4e3 !important;
+        }
+        .react-datepicker__day {
+          color: #ccc5b9 !important;
+        }
+        .react-datepicker__day:hover {
+          background-color: #7c8d4c !important;
+          color: #f8f4e3 !important;
+        }
+        .react-datepicker__day--selected,
+        .react-datepicker__day--in-range,
+        .react-datepicker__day--in-selecting-range {
+          background-color: #7c8d4c !important;
+          color: #f8f4e3 !important;
+        }
+        .react-datepicker__day--keyboard-selected {
+          background-color: #7c8d4c80 !important;
+        }
+        .react-datepicker__day--disabled,
+        .react-datepicker__day--excluded {
+          color: #444 !important;
+          text-decoration: line-through;
+        }
+        .react-datepicker__day--disabled:hover,
+        .react-datepicker__day--excluded:hover {
+          background-color: transparent !important;
+          cursor: not-allowed;
+        }
+        .react-datepicker__navigation-icon::before {
+          border-color: #7c8d4c !important;
+        }
+        .react-datepicker__triangle {
+          display: none;
+        }
+        .react-datepicker-popper {
+          z-index: 100 !important;
+        }
+      `}</style>
     </div>
   );
 }

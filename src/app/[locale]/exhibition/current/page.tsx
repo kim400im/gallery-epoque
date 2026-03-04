@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Navigation from '@/app/components/Navigation';
 
@@ -15,6 +15,9 @@ type Exhibition = {
 
 export default function CurrentExhibitionPage() {
   const t = useTranslations('nav');
+  const te = useTranslations('exhibition');
+  const tc = useTranslations('common');
+  const locale = useLocale();
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +52,7 @@ export default function CurrentExhibitionPage() {
   }, []);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
+    return new Date(dateString).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -65,9 +68,9 @@ export default function CurrentExhibitionPage() {
         </h1>
         
         {loading ? (
-          <p className="text-[#ccc5b9]">Loading...</p>
+          <p className="text-[#ccc5b9]">{tc('loading')}</p>
         ) : exhibitions.length === 0 ? (
-          <p className="text-[#ccc5b9] text-lg">현재 진행 중인 전시가 없습니다.</p>
+          <p className="text-[#ccc5b9] text-lg">{te('noCurrentExhibition')}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {exhibitions.map((exhibition) => (

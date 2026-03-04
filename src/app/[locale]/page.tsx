@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Navigation from '../components/Navigation';
 import HeroSlider, { SlideData, TransitionEffect } from '../components/HeroSlider';
@@ -21,9 +21,10 @@ type Exhibition = {
 
 // 전시 카드 컴포넌트
 function ExhibitionCard({ exhibition, index }: { exhibition: Exhibition, index: number }) {
+  const locale = useLocale();
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('ko-KR', {
+    return new Date(dateString).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
@@ -74,6 +75,7 @@ function ExhibitionSection({
   link: string;
   loading: boolean;
 }) {
+  const tc = useTranslations('common');
   return (
     <section className="py-20 px-8 md:px-24">
       <div className="flex justify-between items-center mb-12">
@@ -94,13 +96,13 @@ function ExhibitionSection({
             viewport={{ once: true }}
             className="text-[#7c8d4c] text-sm tracking-wider hover:text-[#d4af37] transition-colors flex items-center gap-2"
           >
-            VIEW ALL <ArrowRight className="w-4 h-4" />
+            {tc('viewAll')} <ArrowRight className="w-4 h-4" />
           </motion.span>
         </Link>
       </div>
       
       {loading ? (
-        <div className="text-[#ccc5b9] text-center py-12">Loading...</div>
+        <div className="text-[#ccc5b9] text-center py-12">{tc('loading')}</div>
       ) : exhibitions.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -110,7 +112,7 @@ function ExhibitionSection({
           className="text-center py-16"
         >
           <p className="text-[#ccc5b9] text-lg font-[var(--font-cormorant)] tracking-wider">
-            Coming Soon
+            {tc('comingSoon')}
           </p>
         </motion.div>
       ) : (
@@ -130,10 +132,10 @@ export default function GalleryLanding() {
   const [pastExhibitions, setPastExhibitions] = useState<Exhibition[]>([]);
   const [upcomingExhibitions, setUpcomingExhibitions] = useState<Exhibition[]>([]);
   const [homeSlides, setHomeSlides] = useState<SlideData[]>([]);
+  const [featuredNotice, setFeaturedNotice] = useState<{ id: string; title: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 홈 이미지 가져오기
     const fetchHomeImages = async () => {
       try {
         const response = await fetch('/api/home-images');
@@ -146,7 +148,20 @@ export default function GalleryLanding() {
       }
     };
 
+    const fetchFeaturedNotice = async () => {
+      try {
+        const response = await fetch('/api/notices/featured');
+        if (response.ok) {
+          const data = await response.json();
+          setFeaturedNotice(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch featured notice:', error);
+      }
+    };
+
     fetchHomeImages();
+    fetchFeaturedNotice();
   }, []);
 
   useEffect(() => {
@@ -244,13 +259,21 @@ export default function GalleryLanding() {
               <span className="text-[#7c8d4c]">{t('home.title')}</span> {t('home.titleHighlight')}
             </h1>
             
-            <div className="pointer-events-auto inline-block">
+            <div className="pointer-events-auto flex flex-wrap items-center gap-4">
                 <Link href="/book">
                   <button className="group flex items-center gap-4 bg-[#7c8d4c] text-[#f8f4e3] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#6a7a40] transition-all shadow-[0_0_25px_rgba(124,141,76,0.3)]">
                       {t('home.cta')}
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
+                {featuredNotice && (
+                  <Link href={`/notice/${featuredNotice.id}`}>
+                    <button className="group flex items-center gap-3 border border-[#d4af37]/60 text-[#d4af37] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#d4af37]/10 hover:border-[#d4af37] transition-all">
+                      {t('home.callForArtists')}
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </Link>
+                )}
             </div>
           </motion.div>
         </div>
@@ -267,7 +290,7 @@ export default function GalleryLanding() {
 
       {/* 현재 전시 섹션 */}
       <ExhibitionSection 
-        title="Current Exhibition" 
+        title={t('home.currentExhibition')} 
         exhibitions={currentExhibitions}
         link="/exhibition/current"
         loading={loading}
@@ -280,7 +303,7 @@ export default function GalleryLanding() {
 
       {/* 예정 전시 섹션 */}
       <ExhibitionSection 
-        title="Upcoming Exhibition" 
+        title={t('home.upcomingExhibition')} 
         exhibitions={upcomingExhibitions}
         link="/exhibition/upcoming"
         loading={loading}
@@ -293,7 +316,7 @@ export default function GalleryLanding() {
 
       {/* 지난 전시 섹션 */}
       <ExhibitionSection 
-        title="Past Exhibition" 
+        title={t('home.pastExhibition')} 
         exhibitions={pastExhibitions}
         link="/exhibition/past"
         loading={loading}
@@ -303,15 +326,15 @@ export default function GalleryLanding() {
       <footer className="py-16 px-8 md:px-24 border-t border-[#7c8d4c]/20">
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-[#7c8d4c] font-[var(--font-cormorant)] text-2xl">
-            Gallery Epoque
+            Gallery Époque
           </div>
           <div className="text-[#ccc5b9] text-sm text-center md:text-right">
-            <p>서울특별시 종로구 삼청로 123-1</p>
+            <p>{t('home.footerAddress')}</p>
             <p className="mt-1">Tel. 02-723-3420 | galleryepoque@naver.com</p>
           </div>
         </div>
         <div className="mt-8 text-center text-[#7c8d4c]/50 text-xs">
-          © 2024 Gallery Epoque. All rights reserved.
+          {t('home.footerCopyright')}
         </div>
       </footer>
     </div>
