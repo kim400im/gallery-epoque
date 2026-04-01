@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from 'react';
-import { ArrowLeft, Paperclip, Download } from 'lucide-react';
+import { useState, useEffect, useRef, use } from 'react';
+import { ArrowLeft, Paperclip, Download, Eye } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Navigation from '@/app/components/Navigation';
@@ -18,6 +18,7 @@ type Notice = {
   id: string;
   title: string;
   content: string;
+  viewCount: number;
   createdAt: string;
   attachments: NoticeAttachment[];
 };
@@ -42,6 +43,7 @@ export default function NoticeDetailPage({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const viewCounted = useRef(false);
 
   useEffect(() => {
     const fetchNotice = async () => {
@@ -53,6 +55,11 @@ export default function NoticeDetailPage({
         }
         const data = await res.json();
         setNotice(data);
+
+        if (!viewCounted.current) {
+          viewCounted.current = true;
+          fetch(`/api/notices/${id}/view`, { method: 'POST' }).catch(() => {});
+        }
       } catch (err) {
         console.error('Failed to fetch notice:', err);
         setError(t('notFound'));
@@ -117,7 +124,13 @@ export default function NoticeDetailPage({
           <h1 className="text-3xl md:text-4xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-4 leading-snug">
             {notice.title}
           </h1>
-          <p className="text-sm text-[#ccc5b9]">{formatDate(notice.createdAt)}</p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-[#ccc5b9]">{formatDate(notice.createdAt)}</p>
+            <span className="flex items-center gap-1.5 text-sm text-[#ccc5b9]/60">
+              <Eye className="w-3.5 h-3.5" />
+              {notice.viewCount.toLocaleString()}
+            </span>
+          </div>
         </div>
 
         {notice.attachments.length > 0 && (

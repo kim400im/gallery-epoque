@@ -71,12 +71,24 @@ export default function Navigation() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <nav className="absolute top-0 left-0 w-full p-6 md:p-8 flex justify-between items-center z-50 text-[#f8f4e3] bg-[#111311]/60 backdrop-blur-md border-b border-[#7c8d4c]/10">
       {/* Logo */}
-      <Link href="/" className="text-xl md:text-2xl font-serif font-bold tracking-widest uppercase text-[#7c8d4c]">
-        Gallery Époque
+      <Link href="/" className="flex items-center">
+        {logoError ? (
+          <span className="text-xl md:text-2xl font-serif font-bold tracking-widest uppercase text-[#7c8d4c]">
+            Gallery Époque
+          </span>
+        ) : (
+          <img
+            src="/images/logo.png"
+            alt="Gallery Époque"
+            className="h-12 md:h-14 w-auto"
+            onError={() => setLogoError(true)}
+          />
+        )}
       </Link>
 
       {/* Desktop Navigation */}
@@ -141,7 +153,16 @@ export default function Navigation() {
         >
           <SheetHeader>
             <SheetTitle className="text-[#7c8d4c] font-[var(--font-cormorant)] text-xl">
-              Gallery Époque
+              {logoError ? (
+                'Gallery Époque'
+              ) : (
+                <img
+                  src="/images/logo.png"
+                  alt="Gallery Époque"
+                  className="h-12 w-auto"
+                  onError={() => setLogoError(true)}
+                />
+              )}
             </SheetTitle>
           </SheetHeader>
           

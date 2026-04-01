@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Users, Image as ImageIcon, GripVertical, Calendar, Mail, Phone, Check, Ban, X, Bell, Paperclip, Star } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users, Image as ImageIcon, GripVertical, Calendar, Mail, Phone, Check, Ban, X, Bell, Paperclip, Star, Eye } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 import ExhibitionModal from './ExhibitionModal'
 import ArtistModal from './ArtistModal'
@@ -24,6 +24,7 @@ type Notice = {
   title: string
   content: string
   isFeatured: boolean
+  viewCount: number
   createdAt: string
   attachments: NoticeAttachment[]
 }
@@ -58,6 +59,7 @@ type Artist = {
 type ExhibitionImage = {
   id: string
   imageUrl: string
+  description: string | null
   displayOrder: number
 }
 
@@ -547,7 +549,7 @@ export default function AdminDashboard({ userEmail }: Props) {
       <header className="border-b border-[#7c8d4c]/20 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-[var(--font-cormorant)] text-[#7c8d4c]">
-            Gallery Epoque Admin
+            Gallery Époque Admin
           </h1>
           <div className="flex items-center gap-4">
             <span className="text-[#ccc5b9] text-sm">{userEmail}</span>
@@ -1045,7 +1047,7 @@ export default function AdminDashboard({ userEmail }: Props) {
                     </div>
                     <div className="p-4">
                       <h4 className="text-[#f8f4e3] font-medium mb-1">
-                        {image.title || 'Gallery Epoque'}
+                        {image.title || 'Gallery Époque'}
                       </h4>
                       <p className="text-[#ccc5b9] text-sm">
                         {image.subtitle || 'Art & Culture'}
@@ -1264,6 +1266,7 @@ export default function AdminDashboard({ userEmail }: Props) {
                          <th className="text-left text-[#ccc5b9] text-sm font-medium px-6 py-4">제목</th>
                          <th className="text-center text-[#ccc5b9] text-sm font-medium px-4 py-4 hidden md:table-cell">첨부</th>
                          <th className="text-center text-[#ccc5b9] text-sm font-medium px-4 py-4 hidden md:table-cell">메인 노출</th>
+                         <th className="text-center text-[#ccc5b9] text-sm font-medium px-4 py-4 hidden md:table-cell">조회수</th>
                          <th className="text-left text-[#ccc5b9] text-sm font-medium px-6 py-4 hidden md:table-cell">등록일</th>
                          <th className="text-right text-[#ccc5b9] text-sm font-medium px-6 py-4">관리</th>
                        </tr>
@@ -1302,9 +1305,15 @@ export default function AdminDashboard({ userEmail }: Props) {
                                <Star className={`w-4 h-4 ${notice.isFeatured ? 'fill-[#d4af37]' : ''}`} />
                              </button>
                            </td>
-                           <td className="text-[#ccc5b9] text-sm px-6 py-4 hidden md:table-cell">
-                             {formatDate(notice.createdAt)}
-                           </td>
+                            <td className="px-4 py-4 hidden md:table-cell text-center">
+                              <span className="inline-flex items-center gap-1 text-[#ccc5b9] text-sm">
+                                <Eye className="w-3 h-3" />
+                                {notice.viewCount.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="text-[#ccc5b9] text-sm px-6 py-4 hidden md:table-cell">
+                              {formatDate(notice.createdAt)}
+                            </td>
                            <td className="px-6 py-4">
                              <div className="flex justify-end gap-2">
                                <button

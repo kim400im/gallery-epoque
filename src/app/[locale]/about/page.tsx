@@ -306,7 +306,7 @@ export default function AboutPage() {
       <footer className="py-16 px-8 md:px-24 border-t border-[#7c8d4c]/20">
         <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-[#7c8d4c] font-[var(--font-cormorant)] text-2xl">
-            Gallery Epoque
+            Gallery Époque
           </div>
           <div className="text-[#ccc5b9] text-sm text-center md:text-right">
             <p>{th('footerAddress')}</p>

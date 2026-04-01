@@ -1,7 +1,25 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { X, Upload, Loader2, Plus, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { X, Upload, Loader2, Plus, Trash2, GripVertical } from 'lucide-react'
+import { uploadImageToStorage } from '@/lib/supabase/storage'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 type Artist = {
   id: string
@@ -14,6 +32,7 @@ type Artist = {
 type ExhibitionImage = {
   id: string
   imageUrl: string
+  description: string | null
   displayOrder: number
 }
 
@@ -43,6 +62,85 @@ type Props = {
   artists: Artist[]
 }
 
+type ImageItem = {
+  id: string
+  type: 'existing' | 'new'
+  previewUrl: string
+  description: string
+  existingId?: string
+  file?: File
+}
+
+function SortableImageRow({
+  item,
+  onRemove,
+  onDescriptionChange,
+}: {
+  item: ImageItem
+  onRemove: (id: string) => void
+  onDescriptionChange: (id: string, description: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex gap-3 items-start bg-[#111311] rounded-lg p-2"
+    >
+      <button
+        type="button"
+        className="flex-shrink-0 mt-7 cursor-grab active:cursor-grabbing text-[#ccc5b9] hover:text-[#f8f4e3] transition-colors"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="relative flex-shrink-0 w-24 h-24">
+        <img
+          src={item.previewUrl}
+          alt=""
+          className="w-full h-full object-cover rounded-lg"
+        />
+      </div>
+      <input
+        type="text"
+        value={item.description}
+        onChange={(e) => onDescriptionChange(item.id, e.target.value)}
+        placeholder="이미지 설명 (선택사항)"
+        className="flex-1 px-3 py-2 bg-[#1a1c1a] border border-[#7c8d4c]/30 rounded-lg text-[#f8f4e3] text-sm placeholder-[#ccc5b9]/50 focus:outline-none focus:border-[#7c8d4c] transition-colors"
+      />
+      <button
+        type="button"
+        onClick={() => onRemove(item.id)}
+        className="flex-shrink-0 mt-1 bg-red-500/80 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
+
+let tempIdCounter = 0
+function generateTempId(): string {
+  tempIdCounter += 1
+  return `temp-${Date.now()}-${tempIdCounter}`
+}
+
 export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExhibition, artists }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -51,9 +149,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
   const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([])
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [additionalImages, setAdditionalImages] = useState<File[]>([])
-  const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([])
-  const [existingImages, setExistingImages] = useState<ExhibitionImage[]>([])
+  const [imageItems, setImageItems] = useState<ImageItem[]>([])
   const [deleteImageIds, setDeleteImageIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +158,15 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
 
   const isEditMode = !!editingExhibition
 
-  // 수정 모드일 때 기존 데이터 채우기
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
   useEffect(() => {
     if (editingExhibition) {
       setTitle(editingExhibition.title)
@@ -70,10 +174,20 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       setStartDate(editingExhibition.startDate ? editingExhibition.startDate.split('T')[0] : '')
       setEndDate(editingExhibition.endDate ? editingExhibition.endDate.split('T')[0] : '')
       setPreview(editingExhibition.imageUrl)
-      // 기존 작가들의 ID 배열 설정
       const artistIds = editingExhibition.artists?.map(ea => ea.artistId) || []
       setSelectedArtistIds(artistIds)
-      setExistingImages(editingExhibition.images || [])
+      const sortedImages = [...(editingExhibition.images || [])].sort(
+        (a, b) => a.displayOrder - b.displayOrder
+      )
+      setImageItems(
+        sortedImages.map((img) => ({
+          id: img.id,
+          type: 'existing' as const,
+          previewUrl: img.imageUrl,
+          description: img.description || '',
+          existingId: img.id,
+        }))
+      )
       setDeleteImageIds([])
     }
   }, [editingExhibition])
@@ -92,30 +206,60 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
 
   const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      setAdditionalImages(prev => [...prev, ...files])
-      
-      files.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setAdditionalPreviews(prev => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(file)
-      })
+    if (files.length === 0) return
+
+    files.forEach((file) => {
+      const reader = new FileReader()
+      const itemId = generateTempId()
+      reader.onloadend = () => {
+        setImageItems((prev) => [
+          ...prev,
+          {
+            id: itemId,
+            type: 'new' as const,
+            previewUrl: reader.result as string,
+            description: '',
+            file,
+          },
+        ])
+      }
+      reader.readAsDataURL(file)
+    })
+
+    if (additionalFileInputRef.current) {
+      additionalFileInputRef.current.value = ''
     }
   }
 
-  const removeAdditionalImage = (index: number) => {
-    setAdditionalImages(prev => prev.filter((_, i) => i !== index))
-    setAdditionalPreviews(prev => prev.filter((_, i) => i !== index))
-  }
+  const removeImageItem = useCallback((itemId: string) => {
+    setImageItems((prev) => {
+      const item = prev.find((i) => i.id === itemId)
+      if (item?.type === 'existing' && item.existingId) {
+        setDeleteImageIds((ids) => [...ids, item.existingId!])
+      }
+      return prev.filter((i) => i.id !== itemId)
+    })
+  }, [])
 
-  const removeExistingImage = (imageId: string) => {
-    setDeleteImageIds(prev => [...prev, imageId])
-    setExistingImages(prev => prev.filter(img => img.id !== imageId))
-  }
+  const updateImageDescription = useCallback((itemId: string, newDescription: string) => {
+    setImageItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, description: newDescription } : item
+      )
+    )
+  }, [])
 
-  // 작가 선택/해제 핸들러
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      setImageItems((prev) => {
+        const oldIndex = prev.findIndex((i) => i.id === active.id)
+        const newIndex = prev.findIndex((i) => i.id === over.id)
+        return arrayMove(prev, oldIndex, newIndex)
+      })
+    }
+  }, [])
+
   const handleArtistToggle = (artistId: string) => {
     setSelectedArtistIds(prev => {
       if (prev.includes(artistId)) {
@@ -126,7 +270,6 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     })
   }
 
-  // 선택된 작가 제거
   const removeSelectedArtist = (artistId: string) => {
     setSelectedArtistIds(prev => prev.filter(id => id !== artistId))
   }
@@ -153,36 +296,57 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('title', title)
-      formData.append('description', description)
-      formData.append('startDate', startDate)
-      formData.append('endDate', endDate)
-      
-      // 다중 작가 ID 전송
-      if (selectedArtistIds.length > 0) {
-        formData.append('artistIds', JSON.stringify(selectedArtistIds))
-      }
-      
+      let imageUrl: string | undefined
       if (image) {
-        formData.append('image', image)
+        imageUrl = await uploadImageToStorage(image, 'exhibitions')
       }
 
-      // 추가 이미지들
-      additionalImages.forEach(img => {
-        formData.append('additionalImages', img)
-      })
+      const newItems = imageItems.filter((item) => item.type === 'new')
+      const existingItems = imageItems.filter((item) => item.type === 'existing')
+
+      const uploadedAdditionalImages = await Promise.all(
+        newItems
+          .filter((item) => item.file)
+          .map(async (item) => ({
+            url: await uploadImageToStorage(item.file!, 'exhibitions'),
+            description: item.description,
+          }))
+      )
+
+      const body: Record<string, unknown> = {
+        title,
+        description,
+        startDate,
+        endDate,
+        imageUrl,
+        artistIds: selectedArtistIds,
+        additionalImages: uploadedAdditionalImages,
+      }
 
       if (isEditMode) {
-        formData.append('id', editingExhibition.id)
-        if (deleteImageIds.length > 0) {
-          formData.append('deleteImageIds', JSON.stringify(deleteImageIds))
-        }
+        body.id = editingExhibition.id
+        body.deleteImageIds = deleteImageIds
+
+        const existingDescriptions: Record<string, string> = {}
+        existingItems.forEach((item) => {
+          if (item.existingId) {
+            existingDescriptions[item.existingId] = item.description
+          }
+        })
+        body.existingImageDescriptions = existingDescriptions
+
+        body.existingImageOrder = existingItems.map((item, index) => ({
+          id: item.existingId!,
+          displayOrder: index,
+        }))
+
+        body.newImageStartOrder = existingItems.length
       }
 
       const response = await fetch('/api/exhibitions', {
         method: isEditMode ? 'PUT' : 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -208,15 +372,12 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setSelectedArtistIds([])
     setImage(null)
     setPreview(null)
-    setAdditionalImages([])
-    setAdditionalPreviews([])
-    setExistingImages([])
+    setImageItems([])
     setDeleteImageIds([])
     setError(null)
     onClose()
   }
 
-  // 선택되지 않은 작가만 드롭다운에 표시 (가나다순 정렬)
   const availableArtists = artists
     .filter(artist => !selectedArtistIds.includes(artist.id))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
@@ -225,15 +386,12 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 배경 오버레이 */}
       <div 
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={handleClose}
       />
       
-      {/* 모달 */}
       <div className="relative bg-[#1a1c1a] border border-[#7c8d4c]/30 rounded-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
-        {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl text-[#f8f4e3] font-[var(--font-cormorant)]">
             {isEditMode ? '전시회 수정' : '전시회 등록'}
@@ -246,9 +404,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
           </button>
         </div>
 
-        {/* 폼 */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* 전시회 이름 */}
           <div>
             <label htmlFor="title" className="block text-sm text-[#ccc5b9] mb-2">
               전시회 이름
@@ -277,13 +433,11 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             />
           </div>
 
-          {/* 작가 선택 (다중 선택) */}
           <div>
             <label htmlFor="artist" className="block text-sm text-[#ccc5b9] mb-2">
               작가 <span className="text-[#7c8d4c]">(여러 명 선택 가능)</span>
             </label>
             
-            {/* 선택된 작가들 표시 (가나다순 정렬) */}
             {selectedArtistIds.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 {selectedArtistIds
@@ -308,7 +462,6 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
               </div>
             )}
 
-            {/* 작가 선택 드롭다운 */}
             <select
               id="artist"
               value=""
@@ -332,7 +485,6 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             </select>
           </div>
 
-          {/* 전시 기간 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="startDate" className="block text-sm text-[#ccc5b9] mb-2">
@@ -360,7 +512,6 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             </div>
           </div>
 
-          {/* 대표 이미지 업로드 */}
           <div>
             <label className="block text-sm text-[#ccc5b9] mb-2">
               대표 이미지 {isEditMode && <span className="text-[#7c8d4c]">(선택사항)</span>}
@@ -412,7 +563,6 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             )}
           </div>
 
-          {/* 추가 이미지 업로드 */}
           <div>
             <label className="block text-sm text-[#ccc5b9] mb-2">
               추가 이미지 <span className="text-[#7c8d4c]">(선택사항)</span>
@@ -426,51 +576,30 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
               className="hidden"
             />
 
-            {/* 기존 추가 이미지 (수정 모드) */}
-            {existingImages.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {existingImages.map((img) => (
-                  <div key={img.id} className="relative">
-                    <img
-                      src={img.imageUrl}
-                      alt="Additional"
-                      className="w-full h-24 object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeExistingImage(img.id)}
-                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+            {imageItems.length > 0 && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={imageItems.map((item) => item.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3 mb-3">
+                    {imageItems.map((item) => (
+                      <SortableImageRow
+                        key={item.id}
+                        item={item}
+                        onRemove={removeImageItem}
+                        onDescriptionChange={updateImageDescription}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
 
-            {/* 새로 추가할 이미지 미리보기 */}
-            {additionalPreviews.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {additionalPreviews.map((previewUrl, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={previewUrl}
-                      alt={`Additional ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeAdditionalImage(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 추가 이미지 업로드 버튼 */}
             <button
               type="button"
               onClick={() => additionalFileInputRef.current?.click()}
@@ -481,14 +610,12 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             </button>
           </div>
 
-          {/* 에러 메시지 */}
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          {/* 버튼 */}
           <div className="flex gap-3 pt-2">
             <button
               type="button"

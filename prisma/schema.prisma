@@ -67,6 +67,7 @@ model ExhibitionArtist {
 model ExhibitionImage {
   id           String     @id @default(cuid())
   imageUrl     String
+  description  String?    // 이미지 설명 (선택사항)
   displayOrder Int        @default(0)
   createdAt    DateTime   @default(now())
   exhibitionId String
@@ -105,6 +106,7 @@ model Notice {
   title       String
   content     String
   isFeatured  Boolean            @default(false)
+  viewCount   Int                @default(0)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   attachments NoticeAttachment[]

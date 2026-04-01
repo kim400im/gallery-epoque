@@ -99,38 +99,9 @@ export async function GET() {
   }
 }
 
-// 이미지 업로드 헬퍼 함수
-async function uploadImage(supabase: ReturnType<typeof createSupabaseClient>, image: File, folder: string): Promise<string> {
-  const arrayBuffer = await image.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
-  const fileExt = image.name.split('.').pop()
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-  const filePath = `${folder}/${fileName}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('gallery')
-    .upload(filePath, buffer, {
-      contentType: image.type,
-      cacheControl: '3600',
-      upsert: false
-    })
-
-  if (uploadError) {
-    throw new Error(`Failed to upload image: ${uploadError.message}`)
-  }
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('gallery')
-    .getPublicUrl(filePath)
-
-  return publicUrl
-}
-
 // POST: 전시회 등록
 export async function POST(request: NextRequest) {
   try {
-    // 인증 체크
     const supabase = createSupabaseClient(request)
     const { data: { user } } = await supabase.auth.getUser()
     
@@ -141,25 +112,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const formData = await request.formData()
-    const title = formData.get('title') as string
-    const description = (formData.get('description') as string) || null
-    const startDate = formData.get('startDate') as string
-    const endDate = formData.get('endDate') as string
-    const image = formData.get('image') as File
-    const artistIdsJson = formData.get('artistIds') as string | null
-    const additionalImages = formData.getAll('additionalImages') as File[]
+    const body = await request.json()
+    const { title, description, startDate, endDate, imageUrl, artistIds = [], additionalImages = [] } = body as {
+      title: string
+      description: string | null
+      startDate: string
+      endDate: string
+      imageUrl: string
+      artistIds: string[]
+      additionalImages: { url: string; description: string }[]
+    }
 
-    const artistIds: string[] = artistIdsJson ? JSON.parse(artistIdsJson) : []
-
-    if (!title || !image || !startDate || !endDate) {
+    if (!title || !imageUrl || !startDate || !endDate) {
       return NextResponse.json(
         { error: 'Title, dates, and image are required' },
         { status: 400 }
       )
     }
-
-    const imageUrl = await uploadImage(supabase, image, 'exhibitions')
 
     const exhibition = await prisma.exhibition.create({
       data: {
@@ -169,22 +138,19 @@ export async function POST(request: NextRequest) {
         startDate: parseToUTCNoon(startDate),
         endDate: parseToUTCNoon(endDate),
         artists: {
-          create: artistIds.map(artistId => ({
+          create: artistIds.map((artistId: string) => ({
             artistId
           }))
         }
       }
     })
 
-    // 추가 이미지 업로드 및 저장
-    if (additionalImages && additionalImages.length > 0) {
-      const validImages = additionalImages.filter(img => img && img.size > 0)
-      
-      for (let i = 0; i < validImages.length; i++) {
-        const additionalImageUrl = await uploadImage(supabase, validImages[i], 'exhibitions')
+    if (additionalImages.length > 0) {
+      for (let i = 0; i < additionalImages.length; i++) {
         await prisma.exhibitionImage.create({
           data: {
-            imageUrl: additionalImageUrl,
+            imageUrl: additionalImages[i].url,
+            description: additionalImages[i].description?.trim() || null,
             displayOrder: i,
             exhibitionId: exhibition.id
           }
@@ -192,7 +158,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 전시 기간에 해당하는 예약 불가 날짜 생성 (문자열로 전달)
     await createUnavailableDates(
       exhibition.id,
       title,
@@ -200,7 +165,6 @@ export async function POST(request: NextRequest) {
       endDate
     )
 
-    // 전시회와 관련 데이터 함께 조회
     const exhibitionWithRelations = await prisma.exhibition.findUnique({
       where: { id: exhibition.id },
       include: {
@@ -239,18 +203,34 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const formData = await request.formData()
-    const id = formData.get('id') as string
-    const title = formData.get('title') as string
-    const description = (formData.get('description') as string) || null
-    const startDate = formData.get('startDate') as string
-    const endDate = formData.get('endDate') as string
-    const image = formData.get('image') as File | null
-    const artistIdsJson = formData.get('artistIds') as string | null
-    const additionalImages = formData.getAll('additionalImages') as File[]
-    const deleteImageIds = formData.get('deleteImageIds') as string | null
-
-    const artistIds: string[] = artistIdsJson ? JSON.parse(artistIdsJson) : []
+    const body = await request.json()
+    const {
+      id,
+      title,
+      description,
+      startDate,
+      endDate,
+      imageUrl,
+      artistIds = [],
+      additionalImages = [],
+      deleteImageIds = [],
+      existingImageDescriptions = {},
+      existingImageOrder = [],
+      newImageStartOrder = 0,
+    } = body as {
+      id: string
+      title: string
+      description: string | null
+      startDate: string
+      endDate: string
+      imageUrl?: string
+      artistIds: string[]
+      additionalImages: { url: string; description: string }[]
+      deleteImageIds: string[]
+      existingImageDescriptions: Record<string, string>
+      existingImageOrder: { id: string; displayOrder: number }[]
+      newImageStartOrder: number
+    }
 
     if (!id || !title || !startDate || !endDate) {
       return NextResponse.json(
@@ -259,27 +239,25 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    let imageUrl: string | undefined
-
-    // 새 대표 이미지가 업로드된 경우
-    if (image && image.size > 0) {
-      imageUrl = await uploadImage(supabase, image, 'exhibitions')
+    if (deleteImageIds.length > 0) {
+      await prisma.exhibitionImage.deleteMany({
+        where: {
+          id: { in: deleteImageIds },
+          exhibitionId: id
+        }
+      })
     }
 
-    // 삭제할 추가 이미지 처리
-    if (deleteImageIds) {
-      const idsToDelete = JSON.parse(deleteImageIds) as string[]
-      if (idsToDelete.length > 0) {
-        await prisma.exhibitionImage.deleteMany({
-          where: {
-            id: { in: idsToDelete },
-            exhibitionId: id
-          }
-        })
-      }
+    for (const orderItem of existingImageOrder) {
+      await prisma.exhibitionImage.update({
+        where: { id: orderItem.id },
+        data: {
+          displayOrder: orderItem.displayOrder,
+          description: (existingImageDescriptions[orderItem.id])?.trim() || null,
+        }
+      })
     }
 
-    // 기존 작가 관계 삭제 후 새로 생성
     await prisma.exhibitionArtist.deleteMany({
       where: { exhibitionId: id }
     })
@@ -293,38 +271,26 @@ export async function PUT(request: NextRequest) {
         endDate: parseToUTCNoon(endDate),
         ...(imageUrl && { imageUrl }),
         artists: {
-          create: artistIds.map(artistId => ({
+          create: artistIds.map((artistId: string) => ({
             artistId
           }))
         }
       }
     })
 
-    // 새 추가 이미지 업로드
-    if (additionalImages && additionalImages.length > 0) {
-      const validImages = additionalImages.filter(img => img && img.size > 0)
-      
-      // 기존 이미지의 최대 displayOrder 가져오기
-      const existingImages = await prisma.exhibitionImage.findMany({
-        where: { exhibitionId: id },
-        orderBy: { displayOrder: 'desc' },
-        take: 1
-      })
-      const maxOrder = existingImages.length > 0 ? existingImages[0].displayOrder : -1
-
-      for (let i = 0; i < validImages.length; i++) {
-        const additionalImageUrl = await uploadImage(supabase, validImages[i], 'exhibitions')
+    if (additionalImages.length > 0) {
+      for (let i = 0; i < additionalImages.length; i++) {
         await prisma.exhibitionImage.create({
           data: {
-            imageUrl: additionalImageUrl,
-            displayOrder: maxOrder + 1 + i,
+            imageUrl: additionalImages[i].url,
+            description: additionalImages[i].description?.trim() || null,
+            displayOrder: newImageStartOrder + i,
             exhibitionId: id
           }
         })
       }
     }
 
-    // 기존 예약 불가 날짜 삭제 후 새로 생성 (날짜가 변경될 수 있으므로)
     await deleteUnavailableDates(id)
     await createUnavailableDates(
       id,
@@ -333,7 +299,6 @@ export async function PUT(request: NextRequest) {
       endDate
     )
 
-    // 전시회와 관련 데이터 함께 조회
     const exhibitionWithRelations = await prisma.exhibition.findUnique({
       where: { id: exhibition.id },
       include: {

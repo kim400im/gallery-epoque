@@ -29,7 +29,8 @@
     "prev": "Previous",
     "next": "Next",
     "title": "Title",
-    "date": "Date"
+    "date": "Date",
+    "views": "Views"
   },
   "common": {
     "loading": "Loading...",
@@ -50,7 +51,7 @@
     "upcomingExhibition": "Upcoming Exhibition",
     "pastExhibition": "Past Exhibition",
     "footerAddress": "123-1, Samcheong-ro, Jongno-gu, Seoul",
-    "footerCopyright": "\u00a9 2024 Gallery Epoque. All rights reserved.",
+    "footerCopyright": "\u00a9 2024 Gallery Époque. All rights reserved.",
     "callForArtists": "Call for Artists"
   },
   "exhibition": {
@@ -73,16 +74,16 @@
   },
   "about": {
     "heroTitle": "About",
-    "heroTitleHighlight": "Gallery Epoque",
-    "heroSubtitle": "Beyond Thought, Beyond Era.\nWe are Gallery Epoque.",
+    "heroTitleHighlight": "Gallery Époque",
+    "heroSubtitle": "Beyond Thought, Beyond Era.\nWe are Gallery Époque.",
     "sectionTitle": "Where Art and Space\nBecome One",
     "sectionTitleHighlight": "Become One",
-    "introP1": "Opened in Samcheong-dong, Seoul in 2025, Gallery Epoque leads the flow of contemporary art, introducing works by both emerging and established artists.",
+    "introP1": "Opened in Samcheong-dong, Seoul in 2025, Gallery Époque leads the flow of contemporary art, introducing works by both emerging and established artists.",
     "introP2": "In our beautiful exhibition spaces of 10 pyeong on each floor, various forms of artwork can be showcased in optimal conditions.",
     "introP3": "We aim to be more than just an exhibition space\u2014we strive to be a cultural platform where artists and visitors can engage in meaningful dialogue. Through regular artist talks, we provide opportunities to experience art up close.",
     "motto1": "Beyond Thought",
     "motto2": "Beyond Era",
-    "mottoAttribution": "\u2014 Gallery Epoque Philosophy",
+    "mottoAttribution": "\u2014 Gallery Époque Philosophy",
     "facilitiesTitle": "Spaces",
     "facility1Title": "1F Exhibition Hall",
     "facility1Desc": "A cozy 10-pyeong exhibition space where natural light and artificial lighting harmonize to showcase artworks in optimal conditions.",
@@ -125,8 +126,8 @@
     "heading1": "Curate",
     "heading2": "Your",
     "heading3": "Moment.",
-    "description": "A space where your art shines, Gallery Epoque.\nPlease provide details for the best exhibition experience.",
-    "copyright": "\u00a9 2024 Gallery Epoque Seoul",
+    "description": "A space where your art shines, Gallery Époque.\nPlease provide details for the best exhibition experience.",
+    "copyright": "\u00a9 2024 Gallery Époque Seoul",
     "startDate": "Start Date",
     "endDate": "End Date",
     "dateSelectPlaceholder": "Select date",

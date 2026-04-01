@@ -29,7 +29,8 @@
     "prev": "이전",
     "next": "다음",
     "title": "제목",
-    "date": "날짜"
+    "date": "날짜",
+    "views": "조회수"
   },
   "common": {
     "loading": "로딩 중...",
@@ -44,13 +45,13 @@
   "home": {
     "subtitle": "생각을 뛰어넘다, 시대를 뛰어넘다.",
     "title": "Gallery",
-    "titleHighlight": "Epoque",
+    "titleHighlight": "Époque",
     "cta": "공간 예약하기",
     "currentExhibition": "현재 전시",
     "upcomingExhibition": "예정 전시",
     "pastExhibition": "지난 전시",
     "footerAddress": "서울특별시 종로구 삼청로 123-1",
-    "footerCopyright": "\u00a9 2024 Gallery Epoque. All rights reserved.",
+    "footerCopyright": "\u00a9 2024 Gallery Époque. All rights reserved.",
     "callForArtists": "신진 작가 공모"
   },
   "exhibition": {
@@ -126,7 +127,7 @@
     "heading2": "순간을",
     "heading3": "큐레이팅하세요.",
     "description": "당신의 예술이 빛나는 공간, 갤러리 에포크.\n최고의 전시 경험을 위해 상세 내용을 남겨주세요.",
-    "copyright": "\u00a9 2024 Gallery Epoque Seoul",
+    "copyright": "\u00a9 2024 Gallery Époque Seoul",
     "startDate": "시작일",
     "endDate": "종료일",
     "dateSelectPlaceholder": "날짜 선택",

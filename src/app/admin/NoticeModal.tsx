@@ -16,6 +16,7 @@ type Notice = {
   title: string
   content: string
   isFeatured: boolean
+  viewCount: number
   createdAt: string
   attachments: NoticeAttachment[]
 }
