@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from 'react';
-import { ArrowLeft, Paperclip, Download, Eye } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { use, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Download, Eye, Paperclip } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Navigation from '@/app/components/Navigation';
 
@@ -30,32 +30,25 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function NoticeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string; locale: string }>;
-}) {
+export default function NoticeDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
   const { id } = use(params);
   const t = useTranslations('notice');
   const tc = useTranslations('common');
   const locale = useLocale();
-
   const [notice, setNotice] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const viewCounted = useRef(false);
 
   useEffect(() => {
-    const fetchNotice = async () => {
+    async function fetchNotice() {
       try {
         const res = await fetch(`/api/notices/${id}`);
         if (!res.ok) {
           setError(t('notFound'));
           return;
         }
-        const data = await res.json();
-        setNotice(data);
-
+        setNotice(await res.json());
         if (!viewCounted.current) {
           viewCounted.current = true;
           fetch(`/api/notices/${id}/view`, { method: 'POST' }).catch(() => {});
@@ -66,10 +59,10 @@ export default function NoticeDetailPage({
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchNotice();
-  }, [id]);
+  }, [id, t]);
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
@@ -78,97 +71,59 @@ export default function NoticeDetailPage({
       day: 'numeric',
     });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#111311]">
-        <Navigation />
-        <div className="pt-32 px-8 md:px-24">
-          <p className="text-[#ccc5b9]">{tc('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !notice) {
-    return (
-      <div className="min-h-screen bg-[#111311]">
-        <Navigation />
-        <div className="pt-32 px-8 md:px-24">
-          <Link
-            href="/notice"
-            className="inline-flex items-center gap-2 text-[#7c8d4c] hover:text-[#d4af37] transition-colors mb-8"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>{t('backToList')}</span>
-          </Link>
-          <p className="text-[#ccc5b9] text-lg">{error || t('notFound')}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#111311]">
+    <div className="ge-page">
       <Navigation />
-
-      <div className="pt-32 pb-20 px-8 md:px-24 max-w-4xl">
-        <Link
-          href="/notice"
-          className="inline-flex items-center gap-2 text-[#7c8d4c] hover:text-[#d4af37] transition-colors mb-10"
-        >
-          <ArrowLeft className="w-5 h-5" />
+      <main className="ge-container ge-page-pad max-w-4xl">
+        <Link href="/notice" className="mb-10 inline-flex items-center gap-2 text-[var(--color-primary)] transition-colors hover:text-[var(--color-gold)]">
+          <ArrowLeft className="h-5 w-5" />
           <span>{t('backToList')}</span>
         </Link>
 
-        <div className="border-b border-[#7c8d4c]/20 pb-6 mb-8">
-          <h1 className="text-3xl md:text-4xl font-[var(--font-cormorant)] text-[#f8f4e3] mb-4 leading-snug">
-            {notice.title}
-          </h1>
-          <div className="flex items-center gap-4">
-            <p className="text-sm text-[#ccc5b9]">{formatDate(notice.createdAt)}</p>
-            <span className="flex items-center gap-1.5 text-sm text-[#ccc5b9]/60">
-              <Eye className="w-3.5 h-3.5" />
-              {notice.viewCount.toLocaleString()}
-            </span>
-          </div>
-        </div>
+        {loading ? (
+          <p className="text-[var(--color-fg-muted)]">{tc('loading')}</p>
+        ) : error || !notice ? (
+          <p className="text-lg text-[var(--color-fg-muted)]">{error || t('notFound')}</p>
+        ) : (
+          <article className="ge-card p-6 md:p-10">
+            <div className="mb-8 border-b border-[var(--color-border)] pb-8">
+              <p className="ge-kicker mb-4">Notice</p>
+              <h1 className="font-[var(--font-display)] text-4xl font-light leading-tight text-[var(--color-ink)] md:text-5xl">
+                {notice.title}
+              </h1>
+              <div className="mt-5 flex items-center gap-4 font-mono text-xs text-[var(--color-fg-muted)]">
+                <span>{formatDate(notice.createdAt)}</span>
+                <span className="flex items-center gap-1.5">
+                  <Eye className="h-3.5 w-3.5" />
+                  {notice.viewCount.toLocaleString()}
+                </span>
+              </div>
+            </div>
 
-        {notice.attachments.length > 0 && (
-          <div className="mb-8 p-4 bg-[#1a1c1a] border border-[#7c8d4c]/20 rounded-lg">
-            <p className="text-xs uppercase tracking-widest text-[#7c8d4c] mb-3 flex items-center gap-2">
-              <Paperclip className="w-3.5 h-3.5" />
-              {t('attachments')}
-            </p>
-            <ul className="space-y-2">
-              {notice.attachments.map((att) => (
-                <li key={att.id}>
-                  <a
-                    href={att.fileUrl}
-                    download={att.fileName}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-[#f8f4e3] hover:text-[#d4af37] transition-colors group"
-                  >
-                    <Download className="w-4 h-4 text-[#7c8d4c] group-hover:text-[#d4af37] flex-shrink-0" />
-                    <span className="text-sm underline underline-offset-2 decoration-[#7c8d4c]/40 group-hover:decoration-[#d4af37]">
-                      {att.fileName}
-                    </span>
-                    {att.fileSize && (
-                      <span className="text-xs text-[#ccc5b9]/60 no-underline">
-                        ({formatBytes(att.fileSize)})
-                      </span>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+            {notice.attachments.length > 0 && (
+              <div className="mb-8 border border-[var(--color-border)] bg-[var(--color-bg-subtle)] p-5">
+                <p className="ge-kicker mb-3 flex items-center gap-2">
+                  <Paperclip className="h-3.5 w-3.5" />
+                  {t('attachments')}
+                </p>
+                <ul className="space-y-2">
+                  {notice.attachments.map((att) => (
+                    <li key={att.id}>
+                      <a href={att.fileUrl} download={att.fileName} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[var(--color-primary)] underline underline-offset-4">
+                        <Download className="h-4 w-4" />
+                        <span>{att.fileName}</span>
+                        {att.fileSize && <span className="text-xs text-[var(--color-fg-muted)]">({formatBytes(att.fileSize)})</span>}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="whitespace-pre-wrap leading-8 text-[var(--color-fg-muted)]">{notice.content}</div>
+          </article>
         )}
-
-        <div className="text-[#ccc5b9] text-base leading-relaxed whitespace-pre-wrap">
-          {notice.content}
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

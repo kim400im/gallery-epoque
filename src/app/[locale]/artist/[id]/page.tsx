@@ -1,10 +1,11 @@
 "use client";
 
-import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
-import Navigation from '@/app/components/Navigation';
 import Link from 'next/link';
+import Navigation from '@/app/components/Navigation';
 
 interface ArtistImage {
   id: string;
@@ -25,7 +26,6 @@ export default function ArtistDetailPage() {
   const params = useParams();
   const locale = params.locale as string;
   const artistId = params.id as string;
-  
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -34,12 +34,8 @@ export default function ArtistDetailPage() {
     async function fetchArtist() {
       try {
         const response = await fetch(`/api/artists/${artistId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setArtist(data);
-        } else {
-          setError(true);
-        }
+        if (response.ok) setArtist(await response.json());
+        else setError(true);
       } catch (err) {
         console.error('Failed to fetch artist:', err);
         setError(true);
@@ -50,104 +46,82 @@ export default function ArtistDetailPage() {
     fetchArtist();
   }, [artistId]);
 
+  const backLink = (
+    <Link href={`/${locale}/artist`} className="mb-10 inline-flex items-center gap-2 text-[var(--color-primary)] transition-colors hover:text-[var(--color-gold)]">
+      <ArrowLeft className="h-4 w-4" />
+      {t('backToList')}
+    </Link>
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111311]">
+      <div className="ge-page">
         <Navigation />
-        <div className="pt-32 px-8 md:px-24 flex justify-center items-center py-20">
-          <div className="w-8 h-8 border-2 border-[#c9a227] border-t-transparent rounded-full animate-spin" />
-        </div>
+        <div className="ge-container ge-page-pad text-center text-[var(--color-fg-muted)]">Loading...</div>
       </div>
     );
   }
 
   if (error || !artist) {
     return (
-      <div className="min-h-screen bg-[#111311]">
+      <div className="ge-page">
         <Navigation />
-        <div className="pt-32 px-8 md:px-24 pb-16">
-          <p className="text-[#ccc5b9] mb-8">{t('notFound')}</p>
-          <Link
-            href={`/${locale}/artist`}
-            className="inline-flex items-center text-[#c9a227] hover:text-[#f8f4e3] transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            {t('backToList')}
-          </Link>
-        </div>
+        <main className="ge-container ge-page-pad">
+          <p className="mb-8 text-[var(--color-fg-muted)]">{t('notFound')}</p>
+          {backLink}
+        </main>
       </div>
     );
   }
 
-  const hasImages = artist.images && artist.images.length > 0;
+  const images = [...(artist.images || [])].sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
-    <div className="min-h-screen bg-[#111311]">
+    <div className="ge-page">
       <Navigation />
-      <div className="pt-32 px-8 md:px-24 pb-16">
-        <Link
-          href={`/${locale}/artist`}
-          className="inline-flex items-center text-[#c9a227] hover:text-[#f8f4e3] transition-colors mb-8"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          {t('backToList')}
-        </Link>
+      <main className="ge-container ge-page-pad">
+        {backLink}
 
-        <div className="flex flex-col md:flex-row gap-8 mb-12">
-          {hasImages && (
-            <div className="flex gap-4 flex-shrink-0">
-              {artist.images!.map((img) => (
-                <div key={img.id} className="w-48 md:w-64">
-                  <img
-                    src={img.imageUrl}
-                    alt={artist.name}
-                    className="w-full h-auto rounded-lg object-cover"
-                  />
+        <div className="mb-16 grid gap-12 lg:grid-cols-[0.9fr_1fr] lg:items-end">
+          {images.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {images.map((img) => (
+                <div key={img.id} className="ge-art-mat">
+                  <img src={img.imageUrl} alt={artist.name} className="h-auto w-full object-cover" />
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="border border-[var(--color-border)] bg-white p-12">
+              <p className="ge-kicker">Artist profile</p>
+            </div>
           )}
-          <div className="flex items-end">
-            <h1 className="text-4xl md:text-6xl font-serif text-[#f8f4e3]">
-              {artist.name}
-            </h1>
+          <div>
+            <p className="ge-kicker mb-4">Artist</p>
+            <h1 className="ge-title">{artist.name}</h1>
           </div>
         </div>
 
-        <div className="space-y-12">
-          {/* Biography Section */}
-          <section>
-            <h2 className="text-2xl font-serif text-[#c9a227] mb-4 border-b border-[#333] pb-2">
+        <div className="grid gap-8 lg:grid-cols-2">
+          <section className="ge-card p-8">
+            <h2 className="mb-5 border-b border-[var(--color-border)] pb-4 font-[var(--font-display)] text-3xl font-light text-[var(--color-ink)]">
               {t('biography')}
             </h2>
-            {artist.biography ? (
-              <div className="text-[#ccc5b9] whitespace-pre-wrap leading-relaxed">
-                {artist.biography}
-              </div>
-            ) : (
-              <p className="text-[#666]">{t('noBiography')}</p>
-            )}
+            <div className="whitespace-pre-wrap leading-relaxed text-[var(--color-fg-muted)]">
+              {artist.biography || t('noBiography')}
+            </div>
           </section>
 
-          {/* Introduction Section */}
-          <section>
-            <h2 className="text-2xl font-serif text-[#c9a227] mb-4 border-b border-[#333] pb-2">
+          <section className="ge-card p-8">
+            <h2 className="mb-5 border-b border-[var(--color-border)] pb-4 font-[var(--font-display)] text-3xl font-light text-[var(--color-ink)]">
               {t('introduction')}
             </h2>
-            {artist.introduction ? (
-              <div className="text-[#ccc5b9] whitespace-pre-wrap leading-relaxed">
-                {artist.introduction}
-              </div>
-            ) : (
-              <p className="text-[#666]">{t('noIntroduction')}</p>
-            )}
+            <div className="whitespace-pre-wrap leading-relaxed text-[var(--color-fg-muted)]">
+              {artist.introduction || t('noIntroduction')}
+            </div>
           </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,14 +1,17 @@
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { PB_AUTH_COOKIE, pbAuthRefresh } from '@/lib/pocketbase'
 import AdminDashboard from './AdminDashboard'
 
 export default async function AdminPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const cookieStore = await cookies()
+  const token = cookieStore.get(PB_AUTH_COOKIE)?.value
+  if (!token) redirect('/login')
 
-  if (!user) {
+  try {
+    const auth = await pbAuthRefresh(token)
+    return <AdminDashboard userEmail={auth.record.email || ''} />
+  } catch {
     redirect('/login')
   }
-
-  return <AdminDashboard userEmail={user.email || ''} />
 }

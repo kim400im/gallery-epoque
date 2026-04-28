@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,20 +9,21 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     })
 
-    if (error) {
-      setError(error.message)
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      setError(data.error || 'Login failed')
       setLoading(false)
       return
     }
@@ -35,15 +35,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#111311] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* 로고 */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-[var(--font-cormorant)] text-[#7c8d4c] mb-2">
-            Gallery Époque
+            Gallery Epoque
           </h1>
           <p className="text-[#ccc5b9] text-sm">관리자 로그인</p>
         </div>
 
-        {/* 로그인 폼 */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm text-[#ccc5b9] mb-2">
@@ -71,7 +69,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-3 bg-[#1a1c1a] border border-[#7c8d4c]/30 rounded-lg text-[#f8f4e3] placeholder-[#ccc5b9]/50 focus:outline-none focus:border-[#7c8d4c] transition-colors"
-              placeholder="••••••••"
+              placeholder="password"
             />
           </div>
 
@@ -90,10 +88,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* 홈으로 돌아가기 */}
         <div className="mt-8 text-center">
           <a href="/" className="text-[#7c8d4c] text-sm hover:text-[#d4af37] transition-colors">
-            ← 홈으로 돌아가기
+            홈으로 돌아가기
           </a>
         </div>
       </div>

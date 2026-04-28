@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galley Époque — Website</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Jost', sans-serif; background: #F7F4EF; color: #1A1A18; -webkit-font-smoothing: antialiased; }
+  button { cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="Header.jsx"></script>
+<script type="text/babel" src="Footer.jsx"></script>
+<script type="text/babel" src="ArtworkCard.jsx"></script>
+<script type="text/babel" src="HeroSection.jsx"></script>
+<script type="text/babel" src="GalleryGrid.jsx"></script>
+<script type="text/babel" src="ArtworkDetail.jsx"></script>
+<script type="text/babel" src="ContactSection.jsx"></script>
+
+<script type="text/babel">
+// ── Featured strip & about section ──────────────────────────
+
+const FeaturedStrip = ({ onArtworkClick }) => {
+  const featured = WORKS.filter(w => w.featured || w.id <= 3).slice(0, 3);
+  return (
+    <section style={{ padding: '80px 0', background: '#fff', borderTop: '1px solid #E0DDD7' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 40px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px' }}>
+          <div>
+            <div style={{ fontFamily: "'Jost',sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>Hand Picked</div>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '36px', fontWeight: 300, color: '#1A1A18', letterSpacing: '-0.01em' }}>Featured Works</h2>
+          </div>
+          <button
+            onClick={() => window.__navigate && window.__navigate('gallery')}
+            style={{ fontFamily: "'Jost',sans-serif", fontSize: '12px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'transparent', color: '#1A4D2E', border: '1.5px solid #1A4D2E', padding: '10px 22px', borderRadius: '2px' }}
+          >View All</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px' }}>
+          {featured.map(w => <ArtworkCard key={w.id} work={w} onClick={onArtworkClick} />)}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const AboutStrip = () => (
+  <section style={{ background: '#1A4D2E', padding: '96px 0' }}>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center' }}>
+      <div>
+        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '16px' }}>Our Story</div>
+        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '44px', fontWeight: 300, color: 'white', lineHeight: 1.1, letterSpacing: '-0.01em', marginBottom: '24px' }}>A Gallery<br />Without Walls</h2>
+        <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '19px', fontStyle: 'italic', fontWeight: 300, color: 'rgba(255,255,255,0.65)', lineHeight: 1.65, marginBottom: '32px' }}>We believe exceptional art should be accessible. Galley Époque brings curated, original works directly to collectors — no intermediaries, no barriers.</p>
+        <p style={{ fontFamily: "'Jost',sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>Each piece in our collection is personally reviewed, certified authentic, and shipped securely anywhere in the world.</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        {[
+          { n: '200+', l: 'Original works' },
+          { n: '48', l: 'Artists represented' },
+          { n: '12', l: 'Countries reached' },
+          { n: '100%', l: 'Authenticated' },
+        ].map(s => (
+          <div key={s.n} style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '2px', padding: '28px 24px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '40px', fontWeight: 300, color: 'white', lineHeight: 1 }}>{s.n}</div>
+            <div style={{ fontFamily: "'Jost',sans-serif", fontSize: '12px', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ── Exhibition Data & Helpers ────────────────────────────────
+
+const EXHIBITIONS_DATA_INIT = [
+  {
+    id: 1,
+    title: 'Light on Still Water',
+    subtitle: 'Sophie Marchand — Photography',
+    description: 'A meditation on stillness and passage. Twenty photographs taken at dawn on the Atlantic coast, exploring the boundary between sky and sea. Each image captures the moment before full light — a suspended breath.',
+    artist: 'Sophie Marchand',
+    location: 'Main Gallery, Paris',
+    startDate: '2026-03-10',
+    endDate:   '2026-06-20',
+    bg: 'linear-gradient(160deg, #8FB8C8 0%, #4A7899 35%, #2A4D66 70%, #1A2E40 100%)',
+    works: 20,
+  },
+  {
+    id: 2,
+    title: 'Memoria del Luogo',
+    subtitle: 'Luca Ferretti — Painting',
+    description: 'New large-format oils tracing the industrial periphery of Milan — its fog, its light, its lingering traces of work and abandonment. Six monumental canvases, each over two metres wide.',
+    artist: 'Luca Ferretti',
+    location: 'Main Gallery, Paris',
+    startDate: '2026-07-01',
+    endDate:   '2026-09-30',
+    bg: 'radial-gradient(ellipse at 60% 40%, #C9A84C 0%, #8B6B1A 50%, #3A2A08 100%)',
+    works: 6,
+  },
+  {
+    id: 3,
+    title: 'Botanical Geometries',
+    subtitle: 'Yuna Park — Print',
+    description: 'A debut solo exhibition bringing together thirty silkscreen prints, each hand-pulled in limited editions of twelve. Park draws from historical botanical illustration to create pattern systems of uncanny precision and warmth.',
+    artist: 'Yuna Park',
+    location: 'Main Gallery, Paris',
+    startDate: '2026-10-15',
+    endDate:   '2026-12-20',
+    bg: 'linear-gradient(135deg, #A8C99A 0%, #4A7C59 50%, #1A4D2E 100%)',
+    works: 30,
+  },
+  {
+    id: 4,
+    title: 'Traces',
+    subtitle: 'Group Exhibition',
+    description: 'The inaugural Galley Époque group show brought together eight artists working across photography, drawing and textile. Sold out within the first two weeks.',
+    artist: 'Group Exhibition',
+    location: 'Main Gallery, Paris',
+    startDate: '2025-09-05',
+    endDate:   '2025-12-15',
+    bg: 'radial-gradient(ellipse at 30% 60%, #2E7048 0%, #1A4D2E 40%, #0E2D1A 100%)',
+    works: 42,
+  },
+  {
+    id: 5,
+    title: 'Evening Silence',
+    subtitle: 'Anonymous — Painting',
+    description: 'Five large paintings exploring the palette of dusk — the hour when objects lose their edges and colour becomes atmospheric rather than descriptive.',
+    artist: 'Anonymous',
+    location: 'Main Gallery, Paris',
+    startDate: '2025-04-01',
+    endDate:   '2025-07-31',
+    bg: 'linear-gradient(140deg, #3A3360 0%, #1E1A3A 40%, #0D0B1A 100%)',
+    works: 5,
+  },
+];
+
+// Status is derived purely from today's date — no manual field needed
+const getExhibitionStatus = (ex) => {
+  const today = new Date();
+  const start = new Date(ex.startDate);
+  const end   = new Date(ex.endDate);
+  if (today >= start && today <= end) return 'current';
+  if (today < start) return 'upcoming';
+  return 'past';
+};
+
+const fmtDate = (iso) => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+// ── Current Exhibition Strip (homepage) ──────────────────────
+
+const CurrentExhibitionStrip = ({ exhibitions, onNavigate }) => {
+  const current = exhibitions.filter(e => getExhibitionStatus(e) === 'current');
+  if (current.length === 0) return null;
+  const ex = current[0];
+  return (
+    <section style={{ position:'relative', overflow:'hidden', background: ex.bg }}>
+      <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }}></div>
+      <div style={{ position:'relative', zIndex:2, maxWidth:'1280px', margin:'0 auto', padding:'72px 40px', display:'grid', gridTemplateColumns:'1fr auto', gap:'48px', alignItems:'center' }}>
+        <div>
+          <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
+            <span style={{ fontFamily:"'Jost',sans-serif", fontSize:'10px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', background:'#C9A84C', color:'#1A1A18', padding:'4px 10px', borderRadius:'999px' }}>Now Showing</span>
+            <span style={{ fontFamily:"'Jost',sans-serif", fontSize:'11px', color:'rgba(255,255,255,0.45)', letterSpacing:'0.04em' }}>{fmtDate(ex.startDate)} – {fmtDate(ex.endDate)}</span>
+          </div>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(28px,4vw,52px)', fontWeight:300, color:'white', lineHeight:1.1, letterSpacing:'-0.02em', marginBottom:'12px' }}>{ex.title}</h2>
+          <div style={{ fontFamily:"'Jost',sans-serif", fontSize:'13px', fontWeight:500, color:'rgba(255,255,255,0.55)', letterSpacing:'0.04em', marginBottom:'16px' }}>{ex.subtitle} · {ex.location}</div>
+          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'17px', fontStyle:'italic', fontWeight:300, color:'rgba(255,255,255,0.65)', lineHeight:1.7, maxWidth:'520px' }}>{ex.description.slice(0, 160)}…</p>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:'12px', alignItems:'flex-end', flexShrink:0 }}>
+          <button onClick={() => onNavigate('exhibitions')}
+            style={{ fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', background:'white', color:'#1A4D2E', border:'none', padding:'13px 28px', borderRadius:'2px', cursor:'pointer', whiteSpace:'nowrap' }}>
+            View Exhibition
+          </button>
+          <button onClick={() => onNavigate('contact')}
+            style={{ fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase', background:'transparent', color:'rgba(255,255,255,0.65)', border:'1px solid rgba(255,255,255,0.3)', padding:'12px 28px', borderRadius:'2px', cursor:'pointer', whiteSpace:'nowrap' }}>
+            Enquire
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ── Exhibitions Page ──────────────────────────────────────────
+
+const ExhibitionCard = ({ ex, size = 'normal', onClick }) => {
+  const status = getExhibitionStatus(ex);
+  const statusColor = { current:'#C9A84C', upcoming:'#7FB069', past:'#8C8679' }[status];
+  const statusLabel = { current:'Now Showing', upcoming:'Upcoming', past:'Past' }[status];
+  const [hovered, setHovered] = React.useState(false);
+
+  if (size === 'hero') return (
+    <div
+      onClick={() => onClick && onClick(ex)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ position:'relative', borderRadius:'2px', overflow:'hidden', background: ex.bg, minHeight:'420px', display:'flex', alignItems:'flex-end', cursor:'pointer' }}>
+      <div style={{ position:'absolute', inset:0, background: hovered ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.4)', transition:'background 400ms' }}></div>
+      <div style={{ position:'relative', zIndex:2, padding:'40px 44px', flex:1 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
+          <span style={{ fontFamily:"'Jost',sans-serif", fontSize:'10px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', background: statusColor, color:'#1A1A18', padding:'4px 10px', borderRadius:'999px' }}>{statusLabel}</span>
+          <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontFamily:'monospace' }}>{fmtDate(ex.startDate)} – {fmtDate(ex.endDate)}</span>
+        </div>
+        <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(32px,4vw,52px)', fontWeight:300, color:'white', lineHeight:1.1, letterSpacing:'-0.02em', marginBottom:'10px' }}>{ex.title}</h2>
+        <div style={{ fontFamily:"'Jost',sans-serif", fontSize:'13px', color:'rgba(255,255,255,0.55)', letterSpacing:'0.04em', marginBottom:'18px' }}>{ex.subtitle} · {ex.works} works · {ex.location}</div>
+        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'17px', fontStyle:'italic', fontWeight:300, color:'rgba(255,255,255,0.7)', lineHeight:1.7, maxWidth:'560px', marginBottom:'28px' }}>{ex.description}</p>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'white', borderBottom:'1px solid rgba(255,255,255,0.4)', paddingBottom:'2px', transition:'border-color 200ms' }}>
+          View Exhibition →
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      onClick={() => onClick && onClick(ex)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ background:'white', borderRadius:'2px', boxShadow: hovered ? '0 8px 24px rgba(26,26,24,0.13)' : '0 2px 8px rgba(26,26,24,0.07)', overflow:'hidden', cursor:'pointer', transition:'box-shadow 300ms' }}>
+      <div style={{ height:'160px', background: ex.bg, position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', inset:0, background: hovered ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.2)', transition:'background 300ms' }}></div>
+        <div style={{ position:'absolute', bottom:'14px', left:'16px' }}>
+          <span style={{ fontFamily:"'Jost',sans-serif", fontSize:'9px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', background: statusColor, color:'#1A1A18', padding:'3px 8px', borderRadius:'999px' }}>{statusLabel}</span>
+        </div>
+      </div>
+      <div style={{ padding:'20px 22px 22px' }}>
+        <div style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'#8C8679', marginBottom:'6px' }}>{fmtDate(ex.startDate)} – {fmtDate(ex.endDate)}</div>
+        <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontStyle:'italic', color:'#1A1A18', lineHeight:1.25, marginBottom:'6px' }}>{ex.title}</div>
+        <div style={{ fontSize:'12px', color:'#C4BFB8', marginBottom:'10px' }}>{ex.subtitle} · {ex.works} works</div>
+        <p style={{ fontSize:'13px', color:'#8C8679', lineHeight:1.65 }}>{ex.description.slice(0,120)}…</p>
+      </div>
+    </div>
+  );
+};
+
+// ── Exhibition Detail Page ────────────────────────────────────
+
+// Generate placeholder works for an exhibition based on its color/style
+const makeExhibitionWorks = (ex) => {
+  const count = Math.min(ex.works || 8, 12);
+  const palettes = [
+    ['#4A7C59','#1A4D2E'], ['#8FB8C8','#2A4D66'], ['#C9A84C','#8B6B1A'],
+    ['#A8C99A','#4A7C59'], ['#8C8679','#3A3A37'], ['#6A9E78','#235E39'],
+    ['#3A3360','#0D0B1A'], ['#5C5750','#1A1A18'], ['#E2C97A','#C9A84C'],
+    ['#D4E8CB','#7FB069'], ['#2E7048','#0E2D1A'], ['#7FB069','#235E39'],
+  ];
+  const mediums = ['Silver gelatin print','Archival pigment print','Oil on linen','Silkscreen print','Watercolour on paper','Charcoal on cotton rag','Cyanotype','Gouache on board'];
+  const dims = ['30×40 cm','40×60 cm','50×70 cm','60×80 cm','80×100 cm','50×50 cm','70×90 cm','35×45 cm'];
+  return Array.from({ length: count }, (_, i) => {
+    const [c1, c2] = palettes[i % palettes.length];
+    return {
+      id: i+1,
+      title: `${ex.title}, No. ${i+1}`,
+      medium: mediums[i % mediums.length],
+      catalog: `GE-EX${ex.id}-${String(i+1).padStart(3,'0')}`,
+      price: `€ ${(Math.floor(Math.random()*30+5)*100).toLocaleString()}`,
+      dimensions: dims[i % dims.length],
+      bg: `linear-gradient(${130+i*15}deg, ${c1}, ${c2})`,
+      status: i === 2 ? 'sold' : 'available',
+      featured: i === 0,
+    };
+  });
+};
+
+const ExhibitionDetailPage = ({ ex, onBack, onNavigate }) => {
+  const [selectedWork, setSelectedWork] = React.useState(null);
+  const works = React.useMemo(() => makeExhibitionWorks(ex), [ex.id]);
+  const status = getExhibitionStatus(ex);
+  const statusLabel = { current:'Now Showing', upcoming:'Upcoming', past:'Past Exhibition' }[status];
+  const statusColor = { current:'#C9A84C', upcoming:'#7FB069', past:'#8C8679' }[status];
+
+  return (
+    <div style={{ background:'#F7F4EF' }}>
+      {/* Full-bleed hero */}
+      <div style={{ position:'relative', height:'70vh', minHeight:'480px', background: ex.bg, overflow:'hidden' }}>
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.6) 100%)' }}></div>
+        {/* Back button */}
+        <button onClick={onBack}
+          style={{ position:'absolute', top:'28px', left:'40px', zIndex:10, display:'flex', alignItems:'center', gap:'6px', fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase', color:'rgba(255,255,255,0.7)', background:'rgba(0,0,0,0.25)', border:'1px solid rgba(255,255,255,0.2)', padding:'8px 16px', borderRadius:'2px', cursor:'pointer', backdropFilter:'blur(4px)' }}>
+          ← Exhibitions
+        </button>
+        {/* Hero content */}
+        <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'48px 64px', zIndex:2 }}>
+          <div style={{ maxWidth:'1280px', margin:'0 auto' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
+              <span style={{ fontFamily:"'Jost',sans-serif", fontSize:'10px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', background: statusColor, color:'#1A1A18', padding:'4px 12px', borderRadius:'999px' }}>{statusLabel}</span>
+              <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.5)', fontFamily:'monospace' }}>{fmtDate(ex.startDate)} – {fmtDate(ex.endDate)}</span>
+            </div>
+            <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(40px,6vw,80px)', fontWeight:300, color:'white', letterSpacing:'-0.02em', lineHeight:1.0, marginBottom:'12px' }}>{ex.title}</h1>
+            <div style={{ fontFamily:"'Jost',sans-serif", fontSize:'14px', fontWeight:500, color:'rgba(255,255,255,0.55)', letterSpacing:'0.04em' }}>{ex.subtitle}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Exhibition info + description */}
+      <div style={{ background:'white', borderBottom:'1px solid #E0DDD7' }}>
+        <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'48px 40px 40px', display:'grid', gridTemplateColumns:'1fr 320px', gap:'64px' }}>
+          <div>
+            <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', color:'#8C8679', marginBottom:'16px' }}>About This Exhibition</div>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontWeight:300, color:'#1A1A18', lineHeight:1.75 }}>{ex.description}</p>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0', borderLeft:'1px solid #E0DDD7', paddingLeft:'36px' }}>
+            {[
+              ['Artist', ex.artist],
+              ['Location', ex.location],
+              ['Opens', fmtDate(ex.startDate)],
+              ['Closes', fmtDate(ex.endDate)],
+              ['Works', `${ex.works} works`],
+            ].map(([label, value]) => (
+              <div key={label} style={{ padding:'14px 0', borderBottom:'1px solid #E0DDD7' }}>
+                <div style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'#C4BFB8', marginBottom:'4px' }}>{label}</div>
+                <div style={{ fontSize:'14px', color:'#1A1A18' }}>{value}</div>
+              </div>
+            ))}
+            <div style={{ paddingTop:'20px' }}>
+              <button onClick={() => onNavigate('contact')}
+                style={{ fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', background:'#1A4D2E', color:'white', border:'none', padding:'12px 24px', borderRadius:'2px', cursor:'pointer', width:'100%' }}>
+                Contact Gallery
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Works grid */}
+      <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'56px 40px 80px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'32px' }}>
+          <div>
+            <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', color:'#8C8679', marginBottom:'8px' }}>Works in This Exhibition</div>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'32px', fontWeight:300, color:'#1A1A18', letterSpacing:'-0.01em' }}>{ex.works} Pieces</h2>
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}>
+          {works.map(w => (
+            <ArtworkCard key={w.id} work={w} onClick={setSelectedWork} />
+          ))}
+        </div>
+      </div>
+
+      {/* Artwork detail overlay */}
+      {selectedWork && (
+        <ArtworkDetail
+          work={selectedWork}
+          onClose={() => setSelectedWork(null)}
+          onContact={() => { setSelectedWork(null); onNavigate('contact'); }}
+        />
+      )}
+    </div>
+  );
+};
+
+const ExhibitionsPage = ({ exhibitions, onNavigate }) => {
+  const [tab, setTab] = React.useState(() => {
+    const hasCurrent = exhibitions.some(e => getExhibitionStatus(e) === 'current');
+    return hasCurrent ? 'current' : 'upcoming';
+  });
+
+  const byStatus = {
+    current:  exhibitions.filter(e => getExhibitionStatus(e) === 'current'),
+    upcoming: exhibitions.filter(e => getExhibitionStatus(e) === 'upcoming'),
+    past:     exhibitions.filter(e => getExhibitionStatus(e) === 'past'),
+  };
+
+  const TABS = [
+    { id:'current',  label:'Current',  count: byStatus.current.length },
+    { id:'upcoming', label:'Upcoming', count: byStatus.upcoming.length },
+    { id:'past',     label:'Past',     count: byStatus.past.length },
+  ];
+
+  const shown = byStatus[tab];
+
+  return (
+    <div style={{ background:'#F7F4EF', minHeight:'60vh' }}>
+      {/* Page header */}
+      <div style={{ background:'#1A1A18', padding:'72px 40px 0' }}>
+        <div style={{ maxWidth:'1280px', margin:'0 auto' }}>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'#C9A84C', marginBottom:'12px' }}>Programme</div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(40px,6vw,72px)', fontWeight:300, color:'white', letterSpacing:'-0.02em', lineHeight:1.05, marginBottom:'40px' }}>Exhibitions</h1>
+
+          {/* Tabs */}
+          <div style={{ display:'flex', gap:'0', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{
+                  fontFamily:"'Jost',sans-serif", fontSize:'13px', fontWeight:500, letterSpacing:'0.04em',
+                  background:'transparent', border:'none', color: tab===t.id ? 'white' : 'rgba(255,255,255,0.4)',
+                  padding:'14px 28px 16px', cursor:'pointer', position:'relative',
+                  borderBottom: tab===t.id ? '2px solid #C9A84C' : '2px solid transparent',
+                  marginBottom:'-1px', transition:'color 200ms',
+                }}>
+                {t.label}
+                {t.count > 0 && <span style={{ marginLeft:'8px', fontSize:'10px', fontWeight:600, background: tab===t.id ? '#C9A84C' : 'rgba(255,255,255,0.15)', color: tab===t.id ? '#1A1A18' : 'rgba(255,255,255,0.5)', padding:'2px 7px', borderRadius:'999px' }}>{t.count}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'48px 40px 80px' }}>
+        {shown.length === 0 ? (
+          <div style={{ padding:'80px 0', textAlign:'center' }}>
+            <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'28px', fontWeight:300, color:'#C4BFB8', fontStyle:'italic' }}>No {tab} exhibitions</div>
+            <p style={{ fontFamily:"'Jost',sans-serif", fontSize:'13px', color:'#C4BFB8', marginTop:'10px' }}>Check back soon for updates.</p>
+          </div>
+        ) : tab === 'current' ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
+            {shown.map(ex => <ExhibitionCard key={ex.id} ex={ex} size="hero" onNavigate={onNavigate} />)}
+          </div>
+        ) : (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
+            {shown.map(ex => <ExhibitionCard key={ex.id} ex={ex} onNavigate={onNavigate} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Artists Page ─────────────────────────────────────────────
+
+const ARTISTS_DATA = [
+  { id:1, name:'Sophie Marchand',  nationality:'French',  medium:'Photography', works:4, bio:'Sophie works with natural light and long exposures to capture transient moments in coastal France. Her series on the Atlantic shoreline has been exhibited across Europe.', bg:'linear-gradient(135deg,#4A7C59,#1A4D2E)' },
+  { id:2, name:'Luca Ferretti',    nationality:'Italian', medium:'Painting',    works:3, bio:"Luca's large-format oil paintings explore the interplay between memory and place. Born in Milan, he now divides his time between Italy and Portugal.", bg:'linear-gradient(160deg,#C9A84C,#8B6B1A)' },
+  { id:3, name:'Yuna Park',        nationality:'Korean',  medium:'Print',       works:2, bio:'Yuna creates layered silkscreen prints drawing from botanical illustration and contemporary pattern design. Each edition is hand-printed and numbered.', bg:'linear-gradient(135deg,#A8C99A,#4A7C59)' },
+];
+
+const ArtistsPage = ({ onNavigate }) => (
+  <div style={{ background:'#F7F4EF', minHeight:'60vh' }}>
+    <div style={{ background:'#1A4D2E', padding:'80px 40px 64px' }}>
+      <div style={{ maxWidth:'1280px', margin:'0 auto' }}>
+        <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'#C9A84C', marginBottom:'12px' }}>Our Roster</div>
+        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(36px,5vw,64px)', fontWeight:300, color:'white', letterSpacing:'-0.02em', lineHeight:1.1 }}>The Artists</h1>
+        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'18px', fontStyle:'italic', fontWeight:300, color:'rgba(255,255,255,0.6)', marginTop:'16px', maxWidth:'480px', lineHeight:1.65 }}>Each artist we represent shares a commitment to original, considered work — made with intention, deserving a permanent home.</p>
+      </div>
+    </div>
+    <div style={{ maxWidth:'1280px', margin:'0 auto', padding:'64px 40px' }}>
+      {ARTISTS_DATA.map(a => (
+        <div key={a.id} style={{ background:'white', display:'grid', gridTemplateColumns:'280px 1fr', overflow:'hidden', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', marginBottom:'20px' }}>
+          <div style={{ background:a.bg, minHeight:'260px', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:'28px', position:'relative' }}>
+            <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, transparent 40%, rgba(14,45,26,0.7) 100%)' }}></div>
+            <div style={{ position:'relative', zIndex:1 }}>
+              <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'11px', color:'rgba(255,255,255,0.6)', letterSpacing:'0.14em', textTransform:'uppercase', marginBottom:'4px' }}>{a.nationality}</div>
+              <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'28px', fontWeight:300, color:'white', lineHeight:1.1 }}>{a.name}</div>
+            </div>
+          </div>
+          <div style={{ padding:'40px 44px', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+            <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', color:'#8C8679', marginBottom:'16px' }}>{a.medium} · {a.works} work{a.works!==1?'s':''} in collection</div>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'19px', fontWeight:300, color:'#1A1A18', lineHeight:1.7, marginBottom:'28px' }}>{a.bio}</p>
+            <button onClick={() => onNavigate('gallery')} style={{ alignSelf:'flex-start', fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', background:'transparent', color:'#1A4D2E', border:'1.5px solid #1A4D2E', padding:'10px 22px', borderRadius:'2px', cursor:'pointer' }}>View Works →</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Announcements Page ────────────────────────────────────────
+
+const ANNOUNCEMENTS_DATA = [
+  { id:1, title:'Spring Collection Now Open', date:'15 March 2024', pinned:true,  body:'Our curated Spring 2024 collection is now available for viewing and purchase. Fifteen new works across photography, painting and print — including debut pieces from three new artists joining our roster this season.' },
+  { id:2, title:'Gallery Hours — Easter Weekend', date:'10 March 2024', pinned:false, body:'We will be closed 29 March – 1 April for the Easter holiday. Enquiries received during this period will be answered on 2 April. Online browsing and purchasing remain available throughout.' },
+  { id:3, title:'New Artist: Mireille Fontaine', date:'8 March 2024', pinned:false, body:'We are delighted to welcome Mireille Fontaine to the Galley Époque roster. Her debut exhibition opens in May 2024. Works will be available for preview enquiry from 1 April.' },
+];
+
+const AnnouncementsPage = ({ onNavigate }) => {
+  const pinned = ANNOUNCEMENTS_DATA.filter(a => a.pinned);
+  const rest   = ANNOUNCEMENTS_DATA.filter(a => !a.pinned);
+  return (
+    <div style={{ background:'#F7F4EF', minHeight:'60vh' }}>
+      <div style={{ borderBottom:'1px solid #E0DDD7', padding:'64px 40px 48px' }}>
+        <div style={{ maxWidth:'860px', margin:'0 auto' }}>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'#8C8679', marginBottom:'12px' }}>From the Gallery</div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'clamp(36px,5vw,60px)', fontWeight:300, color:'#1A1A18', letterSpacing:'-0.02em', lineHeight:1.1 }}>Announcements</h1>
+        </div>
+      </div>
+      <div style={{ maxWidth:'860px', margin:'0 auto', padding:'48px 40px 80px' }}>
+        {pinned.map(a => (
+          <div key={a.id} style={{ background:'#1A4D2E', borderRadius:'2px', padding:'32px 36px', marginBottom:'24px', border:'1px solid #C9A84C' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
+              <span style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', background:'#C9A84C', color:'#1A1A18', padding:'3px 10px', borderRadius:'999px' }}>Pinned</span>
+              <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)', fontFamily:'monospace' }}>{a.date}</span>
+            </div>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'26px', fontWeight:400, color:'white', marginBottom:'12px', lineHeight:1.2 }}>{a.title}</h2>
+            <p style={{ fontSize:'14px', color:'rgba(255,255,255,0.65)', lineHeight:1.75 }}>{a.body}</p>
+          </div>
+        ))}
+        {rest.map(a => (
+          <div key={a.id} style={{ background:'white', borderRadius:'2px', padding:'28px 32px', marginBottom:'12px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', borderLeft:'3px solid #E0DDD7' }}>
+            <div style={{ fontSize:'12px', color:'#C4BFB8', fontFamily:'monospace', marginBottom:'8px' }}>{a.date}</div>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:400, color:'#1A1A18', marginBottom:'10px', lineHeight:1.2 }}>{a.title}</h2>
+            <p style={{ fontSize:'14px', color:'#8C8679', lineHeight:1.75 }}>{a.body}</p>
+          </div>
+        ))}
+        <div style={{ marginTop:'48px', padding:'32px', background:'#EEF6E9', borderRadius:'2px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'20px', flexWrap:'wrap' }}>
+          <div>
+            <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontWeight:300, color:'#1A4D2E', marginBottom:'4px' }}>Want to stay informed?</div>
+            <p style={{ fontSize:'13px', color:'#4A7C59' }}>Contact us to be added to our mailing list.</p>
+          </div>
+          <button onClick={() => onNavigate('contact')} style={{ fontFamily:"'Jost',sans-serif", fontSize:'12px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', background:'#1A4D2E', color:'white', border:'none', padding:'12px 24px', borderRadius:'2px', cursor:'pointer', flexShrink:0 }}>Contact Gallery</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Root App ─────────────────────────────────────────────────
+
+const App = () => {
+  const [screen, setScreen] = React.useState('home');
+  const [selectedWork, setSelectedWork] = React.useState(null);
+  const [contactWork, setContactWork] = React.useState(null);
+  const [exhibitions, setExhibitions] = React.useState(EXHIBITIONS_DATA_INIT);
+
+  window.__navigate = setScreen;
+  window.__exhibitions = exhibitions;
+  window.__setExhibitions = setExhibitions;
+
+  const navigate = React.useCallback((s) => {
+    setScreen(s);
+    setSelectedWork(null);
+  }, []);
+
+  const handleArtworkClick = (work) => setSelectedWork(work);
+  const handleContact = () => {
+    setContactWork(selectedWork);
+    setSelectedWork(null);
+    setScreen('contact');
+  };
+
+  return (
+    <div>
+      <Header currentScreen={screen} onNavigate={navigate} />
+
+      {selectedWork && (
+        <ArtworkDetail
+          work={selectedWork}
+          onClose={() => setSelectedWork(null)}
+          onContact={handleContact}
+        />
+      )}
+
+      {screen === 'home' && (
+        <>
+          <HeroSection onNavigate={navigate} />
+          <CurrentExhibitionStrip exhibitions={exhibitions} onNavigate={navigate} />
+          <FeaturedStrip onArtworkClick={handleArtworkClick} />
+          <AboutStrip />
+          <ContactSection onBack={() => navigate('home')} />
+        </>
+      )}
+
+      {screen === 'gallery' && (
+        <GalleryGrid onArtworkClick={handleArtworkClick} />
+      )}
+
+      {screen === 'contact' && (
+        <ContactSection selectedWork={contactWork} onBack={() => navigate('gallery')} />
+      )}
+
+      {screen === 'about' && (
+        <>
+          <AboutStrip />
+          <ContactSection onBack={() => navigate('home')} />
+        </>
+      )}
+
+      {screen === 'artists'       && <ArtistsPage onNavigate={navigate} />}
+      {screen === 'announcements' && <AnnouncementsPage onNavigate={navigate} />}
+      {screen === 'exhibitions'   && <ExhibitionsPage exhibitions={exhibitions} onNavigate={navigate} />}
+
+      <Footer onNavigate={navigate} />
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

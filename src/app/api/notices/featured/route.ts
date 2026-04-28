@@ -1,29 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { prisma } from '@/lib/prisma'
-
-function createSupabaseClient(request: NextRequest) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll() {},
-      },
-    }
-  )
-}
+import { requireAuthToken, unauthorized, updateRecord } from '@/lib/pocketbase'
+import { NoticeRecord, getNotices } from '@/lib/pocketbase-data'
 
 export async function GET() {
   try {
-    const notice = await prisma.notice.findFirst({
-      where: { isFeatured: true },
-      select: { id: true, title: true },
-    })
-    return NextResponse.json(notice ?? null)
+    const { notices } = await getNotices(1, 100)
+    const notice = notices.find((item) => item.isFeatured)
+    return NextResponse.json(notice ? { id: notice.id, title: notice.title } : null)
   } catch (error) {
     console.error('Failed to fetch featured notice:', error)
     return NextResponse.json({ error: 'Failed to fetch featured notice' }, { status: 500 })
@@ -32,24 +15,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseClient(request)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const token = requireAuthToken(request)
+    if (!token) return unauthorized()
 
     const { id } = await request.json() as { id: string }
-    if (!id) {
-      return NextResponse.json({ error: 'Notice ID is required' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'Notice ID is required' }, { status: 400 })
+
+    const { notices } = await getNotices(1, 500)
+    for (const notice of notices.filter((item) => item.isFeatured)) {
+      await updateRecord<NoticeRecord>('notices', notice.id, { isFeatured: false }, token)
     }
-
-    await prisma.$transaction([
-      prisma.notice.updateMany({ where: { isFeatured: true }, data: { isFeatured: false } }),
-      prisma.notice.update({ where: { id }, data: { isFeatured: true } }),
-    ])
-
+    await updateRecord<NoticeRecord>('notices', id, { isFeatured: true }, token)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to set featured notice:', error)
@@ -59,15 +35,13 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createSupabaseClient(request)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const token = requireAuthToken(request)
+    if (!token) return unauthorized()
 
-    await prisma.notice.updateMany({ where: { isFeatured: true }, data: { isFeatured: false } })
+    const { notices } = await getNotices(1, 500)
+    for (const notice of notices.filter((item) => item.isFeatured)) {
+      await updateRecord<NoticeRecord>('notices', notice.id, { isFeatured: false }, token)
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to unset featured notice:', error)

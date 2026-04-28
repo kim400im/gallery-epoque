@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
-    "postinstall": "prisma generate",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pb:migrate:dry": "prisma generate && dotenv -e .env.local -e .env.pocketbase -- node scripts/migrate-supabase-to-pocketbase.mjs --dry-run",
+    "pb:migrate": "prisma generate && dotenv -e .env.local -e .env.pocketbase -- node scripts/migrate-supabase-to-pocketbase.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

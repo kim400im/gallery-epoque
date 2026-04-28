@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/prisma';
+import { getExhibition } from '@/lib/pocketbase-data';
 import ExhibitionDetailClient from './ExhibitionDetailClient';
 
 type Props = {
@@ -9,14 +9,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
 
-  const exhibition = await prisma.exhibition.findUnique({
-    where: { id },
-    select: {
-      title: true,
-      description: true,
-      imageUrl: true,
-    },
-  });
+  const exhibition = await getExhibition(id).catch(() => null);
 
   if (!exhibition) {
     return {

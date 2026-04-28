@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F7F4EF; font-family: 'Jost', sans-serif; padding: 28px 32px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+  .row:last-child { margin-bottom: 0; }
+  .label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8C8679; margin-bottom: 10px; }
+
+  /* Base button */
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; border: none; transition: all 150ms cubic-bezier(0.25,0.46,0.45,0.94); }
+
+  /* Primary */
+  .btn-primary { background: #1A4D2E; color: #fff; padding: 13px 28px; border-radius: 2px; }
+  .btn-primary:hover { background: #0E2D1A; }
+
+  /* Secondary */
+  .btn-secondary { background: transparent; color: #1A4D2E; padding: 12px 28px; border-radius: 2px; border: 1.5px solid #1A4D2E; }
+  .btn-secondary:hover { background: #EEF6E9; }
+
+  /* Ghost */
+  .btn-ghost { background: transparent; color: #8C8679; padding: 12px 20px; border-radius: 2px; border: 1px solid #E0DDD7; }
+  .btn-ghost:hover { border-color: #C4BFB8; color: #1A1A18; }
+
+  /* Gold / featured */
+  .btn-gold { background: #C9A84C; color: #1A1A18; padding: 13px 28px; border-radius: 2px; font-weight: 600; }
+  .btn-gold:hover { background: #B8922E; }
+
+  /* Inverse */
+  .btn-inverse { background: #F7F4EF; color: #1A4D2E; padding: 13px 28px; border-radius: 2px; }
+
+  /* Small */
+  .btn-sm { font-size: 11px; padding: 9px 18px; }
+
+  /* Disabled */
+  .btn-disabled { opacity: 0.38; pointer-events: none; }
+
+  .dark-bg { background: #1A4D2E; padding: 16px 20px; border-radius: 2px; }
+</style>
+</head>
+<body>
+  <div class="label">Primary Actions</div>
+  <div class="row">
+    <button class="btn btn-primary">Purchase</button>
+    <button class="btn btn-primary btn-sm">Contact</button>
+    <button class="btn btn-primary btn-disabled">Sold Out</button>
+  </div>
+
+  <div class="label">Secondary / Outline</div>
+  <div class="row">
+    <button class="btn btn-secondary">View Gallery</button>
+    <button class="btn btn-secondary btn-sm">Learn More</button>
+    <button class="btn btn-secondary btn-disabled">Unavailable</button>
+  </div>
+
+  <div class="label">Ghost / Subtle</div>
+  <div class="row">
+    <button class="btn btn-ghost">All Works</button>
+    <button class="btn btn-ghost btn-sm">Filter</button>
+  </div>
+
+  <div class="label">Gold / Featured</div>
+  <div class="row">
+    <button class="btn btn-gold">Enquire to Buy</button>
+  </div>
+
+  <div class="label">On Dark Background</div>
+  <div class="dark-bg">
+    <div class="row" style="margin-bottom:0;">
+      <button class="btn btn-inverse">View Collection</button>
+      <button class="btn" style="background:transparent;color:rgba(255,255,255,0.75);border:1.5px solid rgba(255,255,255,0.35);padding:12px 24px;border-radius:2px;font-size:13px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;">Contact Us</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F7F4EF; font-family: 'Jost', sans-serif; padding: 28px 32px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8C8679; margin-bottom: 10px; }
+  .badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+</style>
+</head>
+<body>
+  <div class="label">Status Badges</div>
+  <div class="row">
+    <span class="badge" style="background:#EEF6E9; color:#1A4D2E;">Available</span>
+    <span class="badge" style="background:#F5EDD0; color:#8B6B1A;">Featured</span>
+    <span class="badge" style="background:#F2F0EC; color:#8C8679;">Sold</span>
+    <span class="badge" style="background:#1A4D2E; color:white;">New Arrival</span>
+    <span class="badge" style="background:#0E2D1A; color:#C9A84C;">Limited Edition</span>
+  </div>
+
+  <div class="label">Category Tags</div>
+  <div class="row">
+    <span class="badge" style="background:transparent; color:#5C5750; border:1px solid #C4BFB8; border-radius:2px; padding:4px 10px;">Photography</span>
+    <span class="badge" style="background:transparent; color:#5C5750; border:1px solid #C4BFB8; border-radius:2px; padding:4px 10px;">Painting</span>
+    <span class="badge" style="background:transparent; color:#5C5750; border:1px solid #C4BFB8; border-radius:2px; padding:4px 10px;">Print</span>
+    <span class="badge" style="background:transparent; color:#5C5750; border:1px solid #C4BFB8; border-radius:2px; padding:4px 10px;">Digital</span>
+    <span class="badge" style="background:#1A4D2E; color:white; border-radius:2px; padding:4px 10px;">All Works</span>
+  </div>
+
+  <div class="label">Price Range Tag</div>
+  <div class="row">
+    <span style="font-family:'Jost',sans-serif; font-size:15px; font-weight:500; color:#C9A84C;">€ 1,200</span>
+    <span style="font-size:12px; color:#C4BFB8;">·</span>
+    <span style="font-family:'Jost',sans-serif; font-size:12px; color:#8C8679; text-decoration:line-through;">€ 1,500</span>
+    <span class="badge" style="background:#F5EDD0; color:#8B6B1A; margin-left:4px;">−20%</span>
+  </div>
+</body>
+</html>

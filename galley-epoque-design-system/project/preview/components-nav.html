@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #E8E5DF; font-family: 'Jost', sans-serif; }
+
+  /* Nav */
+  nav { background: white; border-bottom: 1px solid #E0DDD7; height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+  .nav-mark { width: 32px; height: 32px; border: 2px solid #1A4D2E; border-radius: 1px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .nav-mark::after { content: ''; position: absolute; inset: 3px; border: 1px solid #1A4D2E; border-radius: 0.5px; }
+  .nav-wordmark { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; color: #1A4D2E; letter-spacing: 0.1em; }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-link { font-size: 13px; font-weight: 500; color: #5C5750; letter-spacing: 0.04em; text-decoration: none; position: relative; }
+  .nav-link:hover { color: #1A4D2E; }
+  .nav-link.active { color: #1A4D2E; }
+  .nav-link.active::after { content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 1.5px; background: #1A4D2E; }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .nav-btn { font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: #1A4D2E; color: white; border: none; padding: 9px 20px; border-radius: 2px; cursor: pointer; }
+
+  /* Mobile nav preview */
+  .mobile-nav { background: white; border-bottom: 1px solid #E0DDD7; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; margin-top: 16px; width: 375px; border-radius: 2px; }
+  .hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+  .hamburger span { display: block; width: 22px; height: 1.5px; background: #1A1A18; }
+</style>
+</head>
+<body style="padding: 24px;">
+  <!-- Desktop nav -->
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-mark"></div>
+      <span class="nav-wordmark">GALLEY <em>Époque</em></span>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link active" href="#">Gallery</a>
+      <a class="nav-link" href="#">Exhibitions</a>
+      <a class="nav-link" href="#">Artists</a>
+      <a class="nav-link" href="#">About</a>
+      <a class="nav-link" href="#">Contact</a>
+    </div>
+    <div class="nav-actions">
+      <button class="nav-btn">Enquire</button>
+    </div>
+  </nav>
+
+  <!-- Mobile nav -->
+  <div class="mobile-nav">
+    <div class="nav-logo">
+      <div class="nav-mark" style="width:26px;height:26px;"></div>
+      <span class="nav-wordmark" style="font-size:15px;">GALLEY <em>Époque</em></span>
+    </div>
+    <div class="hamburger">
+      <span></span><span></span><span style="width:14px;"></span>
+    </div>
+  </div>
+</body>
+</html>

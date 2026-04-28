@@ -1,10 +1,10 @@
 "use client";
 
-import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import Navigation from '@/app/components/Navigation';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import Navigation from '@/app/components/Navigation';
 
 interface Artist {
   id: string;
@@ -24,10 +24,7 @@ export default function ArtistPage() {
     async function fetchArtists() {
       try {
         const response = await fetch('/api/artists');
-        if (response.ok) {
-          const data = await response.json();
-          setArtists(data);
-        }
+        if (response.ok) setArtists(await response.json());
       } catch (error) {
         console.error('Failed to fetch artists:', error);
       } finally {
@@ -38,35 +35,35 @@ export default function ArtistPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#111311]">
+    <div className="ge-page">
       <Navigation />
-      <div className="pt-32 px-8 md:px-24 pb-16">
-        <h1 className="text-4xl md:text-6xl font-serif text-[#f8f4e3] mb-12">
-          {t('pageTitle')}
-        </h1>
-        
+      <main className="ge-container ge-page-pad">
+        <div className="mb-12 max-w-3xl">
+          <p className="ge-kicker mb-4">Our Roster</p>
+          <h1 className="ge-title">{t('pageTitle')}</h1>
+          <p className="ge-lead mt-5">Each artist is introduced through a considered body of work and a precise point of view.</p>
+        </div>
+
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-8 h-8 border-2 border-[#c9a227] border-t-transparent rounded-full animate-spin" />
-          </div>
+          <p className="border-y border-[var(--color-border)] py-16 text-center text-[var(--color-fg-muted)]">Loading...</p>
         ) : artists.length === 0 ? (
-          <p className="text-[#ccc5b9]">{t('noArtists')}</p>
+          <p className="ge-lead border-y border-[var(--color-border)] py-16 text-center">{t('noArtists')}</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {artists.map((artist) => (
-              <Link
-                key={artist.id}
-                href={`/${locale}/artist/${artist.id}`}
-                className="group block p-6 bg-[#1a1c1a] border border-[#333] rounded-lg hover:border-[#c9a227] transition-all duration-300"
-              >
-                <h2 className="text-2xl font-serif text-[#f8f4e3] group-hover:text-[#c9a227] transition-colors duration-300">
+              <Link key={artist.id} href={`/${locale}/artist/${artist.id}`} className="ge-card group block p-8">
+                <p className="ge-kicker mb-4">Artist</p>
+                <h2 className="font-[var(--font-display)] text-4xl font-light text-[var(--color-ink)] transition-colors group-hover:text-[var(--color-primary)]">
                   {artist.name}
                 </h2>
+                {artist.introduction && (
+                  <p className="mt-5 line-clamp-3 text-sm leading-7 text-[var(--color-fg-muted)]">{artist.introduction}</p>
+                )}
               </Link>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

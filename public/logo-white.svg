@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" fill="none">
+  <rect x="4" y="4" width="64" height="64" rx="1" stroke="#FFFFFF" stroke-width="2.5"></rect>
+  <rect x="12" y="12" width="48" height="48" rx="0.5" stroke="#FFFFFF" stroke-width="1.5"></rect>
+  <path d="M36 28 C28 28 24 33 24 36 C24 41 28 44 36 44 L40 44 L40 38 L35 38" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+  <text x="84" y="34" font-family="&#39;Cormorant Garamond&#39;, Georgia, serif" font-size="22" font-weight="300" fill="#FFFFFF" letter-spacing="3">GALLEY</text>
+  <text x="84" y="56" font-family="&#39;Cormorant Garamond&#39;, Georgia, serif" font-size="16" font-weight="300" fill="#FFFFFF" letter-spacing="6" font-style="italic">Époque</text>
+  <line x1="84" y1="40" x2="300" y2="40" stroke="#C9A84C" stroke-width="0.75"></line>
+</svg>

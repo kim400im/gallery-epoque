@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F7F4EF; font-family: 'Jost', sans-serif; padding: 32px 40px; }
+  .logo-row { display: flex; gap: 48px; align-items: center; flex-wrap: wrap; margin-bottom: 28px; }
+  .logo-box { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .logo-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8C8679; }
+  .logo-on-dark { background: #1A4D2E; padding: 20px 28px; border-radius: 2px; }
+  .logo-on-cream { background: #F7F4EF; padding: 20px 28px; border-radius: 2px; border: 1px solid #E0DDD7; }
+
+  /* Inline logo recreation */
+  .logo-inline { display: flex; align-items: center; gap: 12px; }
+  .logo-frame { border: 2.5px solid currentColor; border-radius: 1px; width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; }
+  .logo-frame::after { content: ''; position: absolute; inset: 5px; border: 1.5px solid currentColor; border-radius: 0.5px; }
+  .logo-text { display: flex; flex-direction: column; }
+  .logo-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; letter-spacing: 0.18em; line-height: 1; }
+  .logo-sub  { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-weight: 300; font-style: italic; letter-spacing: 0.3em; line-height: 1; margin-top: 3px; }
+  .logo-rule { width: 1px; height: 28px; background: #C9A84C; margin: 0 2px; }
+</style>
+</head>
+<body>
+  <div class="logo-row">
+    <div class="logo-box">
+      <div class="logo-label">On Cream (Default)</div>
+      <div class="logo-on-cream">
+        <div class="logo-inline" style="color:#1A4D2E;">
+          <div class="logo-frame"></div>
+          <div class="logo-rule"></div>
+          <div class="logo-text">
+            <span class="logo-name">GALLEY</span>
+            <span class="logo-sub">Époque</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="logo-box">
+      <div class="logo-label">On Dark (Inverse)</div>
+      <div class="logo-on-dark">
+        <div class="logo-inline" style="color:white;">
+          <div class="logo-frame"></div>
+          <div class="logo-rule"></div>
+          <div class="logo-text">
+            <span class="logo-name">GALLEY</span>
+            <span class="logo-sub">Époque</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="logo-box">
+    <div class="logo-label">Mark Only</div>
+    <div style="display:flex; gap:16px; align-items:center;">
+      <div class="logo-frame" style="color:#1A4D2E; width:48px; height:48px;"></div>
+      <div class="logo-frame" style="color:white; width:48px; height:48px; background:#1A4D2E; padding:2px;"></div>
+    </div>
+  </div>
+</body>
+</html>

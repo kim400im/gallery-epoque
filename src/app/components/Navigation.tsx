@@ -1,17 +1,11 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { ChevronDown, Menu } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 
 type SubMenuItem = {
   labelKey: string;
@@ -45,16 +39,12 @@ const menuItems: MenuItem[] = [
   {
     labelKey: 'artist',
     href: '/artist',
-    subItems: [
-      { labelKey: 'artistList', href: '/artist' },
-    ],
+    subItems: [{ labelKey: 'artistList', href: '/artist' }],
   },
   {
     labelKey: 'notice',
     href: '/notice',
-    subItems: [
-      { labelKey: 'noticeList', href: '/notice' },
-    ],
+    subItems: [{ labelKey: 'noticeList', href: '/notice' }],
   },
   {
     labelKey: 'contact',
@@ -69,125 +59,93 @@ const menuItems: MenuItem[] = [
 export default function Navigation() {
   const t = useTranslations('nav');
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
 
   return (
-    <nav className="absolute top-0 left-0 w-full p-6 md:p-8 flex justify-between items-center z-50 text-[#f8f4e3] bg-[#111311]/60 backdrop-blur-md border-b border-[#7c8d4c]/10">
-      {/* Logo */}
-      <Link href="/" className="flex items-center">
-        {logoError ? (
-          <span className="text-xl md:text-2xl font-serif font-bold tracking-widest uppercase text-[#7c8d4c]">
-            Gallery Époque
-          </span>
-        ) : (
-          <img
-            src="/images/logo.png"
-            alt="Gallery Époque"
-            className="h-12 md:h-14 w-auto"
-            onError={() => setLogoError(true)}
-          />
-        )}
-      </Link>
+    <header className="fixed left-0 top-0 z-50 w-full border-b border-[var(--color-border)] bg-white/95 backdrop-blur-md">
+      <nav className="ge-container flex h-[var(--nav-height)] items-center justify-between">
+        <Link href="/" className="flex items-center" aria-label="Gallery Epoque home">
+          <Image src="/logo.svg" alt="Gallery Epoque" width={178} height={40} priority className="h-10 w-auto" />
+        </Link>
 
-      {/* Desktop Navigation */}
-      <div className="hidden md:flex items-center gap-6 lg:gap-8">
-        {/* Main Menu Items */}
-        <div className="flex items-center gap-4 lg:gap-6">
-          {menuItems.map((item) => (
-            <div
-              key={item.labelKey}
-              className="relative"
-              onMouseEnter={() => setHoveredMenu(item.labelKey)}
-              onMouseLeave={() => setHoveredMenu(null)}
-            >
-              {/* Main Menu Button */}
-              <button className="flex items-center gap-1 text-sm tracking-wider text-[#f8f4e3] hover:text-[#d4af37] transition-colors py-2">
-                {t(item.labelKey)}
-                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${hoveredMenu === item.labelKey ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Dropdown Menu */}
-              <div
-                className={`absolute top-full left-0 mt-1 min-w-[180px] bg-[#1a1c1a]/95 backdrop-blur-md border border-[#7c8d4c]/20 rounded-lg shadow-xl overflow-hidden transition-all duration-200 ${
-                  hoveredMenu === item.labelKey
-                    ? 'opacity-100 visible translate-y-0'
-                    : 'opacity-0 invisible -translate-y-2'
-                }`}
-              >
-                {item.subItems.map((subItem) => (
-                  <Link
-                    key={subItem.labelKey}
-                    href={subItem.href}
-                    className="block px-5 py-3 text-sm text-[#ccc5b9] hover:bg-[#7c8d4c]/20 hover:text-[#d4af37] transition-colors"
-                  >
-                    {t(subItem.labelKey)}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Language Switcher & Book Button */}
-        <div className="flex items-center gap-4 lg:gap-6 ml-4 border-l border-[#7c8d4c]/30 pl-4 lg:pl-6">
-          <LanguageSwitcher />
-          <Link
-            href="/book"
-            className="px-5 py-2 bg-[#7c8d4c]/20 border border-[#7c8d4c]/70 text-[#f8f4e3] rounded-full hover:bg-[#7c8d4c] hover:text-[#f8f4e3] transition-all text-sm drop-shadow-sm"
-          >
-            {t('bookSpace')}
-          </Link>
-        </div>
-      </div>
-
-      {/* Mobile Menu - Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetTrigger className="md:hidden text-[#f8f4e3] p-2">
-          <Menu className="w-6 h-6" />
-        </SheetTrigger>
-        <SheetContent 
-          side="right" 
-          className="bg-[#111311] border-l border-[#7c8d4c]/20 w-[300px] sm:w-[350px]"
-        >
-          <SheetHeader>
-            <SheetTitle className="text-[#7c8d4c] font-[var(--font-cormorant)] text-xl">
-              {logoError ? (
-                'Gallery Époque'
-              ) : (
-                <img
-                  src="/images/logo.png"
-                  alt="Gallery Époque"
-                  className="h-12 w-auto"
-                  onError={() => setLogoError(true)}
-                />
-              )}
-            </SheetTitle>
-          </SheetHeader>
-          
-          <div className="flex flex-col h-full pt-4 pb-8 overflow-y-auto">
+        <div className="hidden items-center gap-7 md:flex">
+          <div className="flex items-center gap-1">
             {menuItems.map((item) => (
-              <div key={item.labelKey} className="border-b border-[#7c8d4c]/20">
-                <button
-                  className="flex items-center justify-between w-full py-4 text-lg text-[#f8f4e3]"
-                  onClick={() => setMobileSubmenuOpen(mobileSubmenuOpen === item.labelKey ? null : item.labelKey)}
+              <div
+                key={item.labelKey}
+                className="relative"
+                onMouseEnter={() => setHoveredMenu(item.labelKey)}
+                onMouseLeave={() => setHoveredMenu(null)}
+              >
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-1 border-l-2 border-transparent px-4 py-6 text-[13px] font-medium tracking-[0.04em] text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)]"
                 >
                   {t(item.labelKey)}
-                  <ChevronDown className={`w-5 h-5 text-[#7c8d4c] transition-transform duration-200 ${mobileSubmenuOpen === item.labelKey ? 'rotate-180' : ''}`} />
-                </button>
-                
+                  <ChevronDown className={`h-3.5 w-3.5 text-[var(--color-fg-muted)] transition-transform ${hoveredMenu === item.labelKey ? 'rotate-180' : ''}`} />
+                </Link>
+
                 <div
-                  className={`overflow-hidden transition-all duration-300 ${
-                    mobileSubmenuOpen === item.labelKey ? 'max-h-60' : 'max-h-0'
+                  className={`absolute left-0 top-full min-w-[196px] border border-[var(--color-border)] bg-white shadow-[var(--shadow-lg)] transition-all duration-200 ${
+                    hoveredMenu === item.labelKey
+                      ? 'visible translate-y-0 opacity-100'
+                      : 'invisible -translate-y-2 opacity-0'
                   }`}
                 >
                   {item.subItems.map((subItem) => (
                     <Link
                       key={subItem.labelKey}
                       href={subItem.href}
-                      className="block py-3 pl-4 text-[#ccc5b9] hover:text-[#d4af37] transition-colors"
-                      onClick={() => setSheetOpen(false)}
+                      className="block border-l-2 border-transparent px-5 py-3 text-sm text-[var(--color-fg-muted)] transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                    >
+                      {t(subItem.labelKey)}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 border-l border-[var(--color-border)] pl-6">
+            <LanguageSwitcher />
+            <Link href="/book" className="ge-btn">
+              {t('bookSpace')}
+            </Link>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 items-center justify-center border border-[var(--color-border)] text-[var(--color-primary)] md:hidden"
+          onClick={() => setMobileOpen((open) => !open)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </nav>
+
+      {mobileOpen && (
+        <div className="border-t border-[var(--color-border)] bg-white md:hidden">
+          <div className="ge-container py-3">
+            {menuItems.map((item) => (
+              <div key={item.labelKey} className="border-b border-[var(--color-border)]">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between py-4 text-left text-base text-[var(--color-ink)]"
+                  onClick={() => setMobileSubmenuOpen(mobileSubmenuOpen === item.labelKey ? null : item.labelKey)}
+                >
+                  {t(item.labelKey)}
+                  <ChevronDown className={`h-4 w-4 text-[var(--color-primary)] transition-transform ${mobileSubmenuOpen === item.labelKey ? 'rotate-180' : ''}`} />
+                </button>
+
+                <div className={`overflow-hidden transition-all duration-300 ${mobileSubmenuOpen === item.labelKey ? 'max-h-56 pb-3' : 'max-h-0'}`}>
+                  {item.subItems.map((subItem) => (
+                    <Link
+                      key={subItem.labelKey}
+                      href={subItem.href}
+                      className="block border-l-2 border-[var(--color-primary)] px-4 py-2 text-sm text-[var(--color-fg-muted)]"
+                      onClick={() => setMobileOpen(false)}
                     >
                       {t(subItem.labelKey)}
                     </Link>
@@ -196,20 +154,15 @@ export default function Navigation() {
               </div>
             ))}
 
-            {/* Mobile Footer */}
-            <div className="mt-auto pt-6 space-y-4">
+            <div className="flex items-center justify-between gap-4 py-5">
               <LanguageSwitcher />
-              <Link
-                href="/book"
-                className="block w-full py-3 text-center bg-[#7c8d4c] text-[#f8f4e3] rounded-full hover:bg-[#6a7a40] transition-colors"
-                onClick={() => setSheetOpen(false)}
-              >
+              <Link href="/book" className="ge-btn" onClick={() => setMobileOpen(false)}>
                 {t('bookSpace')}
               </Link>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
-    </nav>
+        </div>
+      )}
+    </header>
   );
 }

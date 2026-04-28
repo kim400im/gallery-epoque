@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { getRecord, getServerSuperuserToken, updateRecord } from '@/lib/pocketbase'
+import { NoticeRecord } from '@/lib/pocketbase-data'
 
 export async function POST(
   _request: NextRequest,
@@ -8,18 +8,10 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    await prisma.notice.update({
-      where: { id },
-      data: { viewCount: { increment: 1 } },
-    })
+    const notice = await getRecord<NoticeRecord>('notices', id)
+    await updateRecord('notices', id, { viewCount: (notice.viewCount || 0) + 1 }, await getServerSuperuserToken())
     return NextResponse.json({ success: true })
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2025'
-    ) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    }
     console.error('Failed to increment view count:', error)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }

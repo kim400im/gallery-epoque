@@ -1,133 +1,117 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronDown } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
+import { ArrowRight } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import Navigation from '../components/Navigation';
 import HeroSlider, { SlideData, TransitionEffect } from '../components/HeroSlider';
 
-// 슬라이더 효과 설정 (여기서 변경 가능: 'slide' | 'fade' | 'zoom')
 const SLIDER_EFFECT: TransitionEffect = 'fade';
 
 type Exhibition = {
-  id: string
-  title: string
-  imageUrl: string
-  startDate: string
-  endDate: string
+  id: string;
+  title: string;
+  description?: string | null;
+  imageUrl: string;
+  startDate: string;
+  endDate: string;
+};
+
+function formatDate(dateString: string, locale: string) {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
-// 전시 카드 컴포넌트
-function ExhibitionCard({ exhibition, index }: { exhibition: Exhibition, index: number }) {
+function ExhibitionCard({ exhibition, index }: { exhibition: Exhibition; index: number }) {
   const locale = useLocale();
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString(locale === 'ko' ? 'ko-KR' : 'en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/\. /g, '.').replace('.', '.');
-  };
-
-  const dateRange = exhibition.startDate && exhibition.endDate 
-    ? `${formatDate(exhibition.startDate)} - ${formatDate(exhibition.endDate)}`
-    : '';
+  const dateRange = `${formatDate(exhibition.startDate, locale)} - ${formatDate(exhibition.endDate, locale)}`;
 
   return (
-    <Link href={`/exhibition/${exhibition.id}`}>
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
+    <Link href={`/exhibition/${exhibition.id}`} className="group block">
+      <motion.article
+        initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: index * 0.1 }}
+        transition={{ duration: 0.4, delay: index * 0.08 }}
         viewport={{ once: true }}
-        className="group cursor-pointer"
+        className="ge-card overflow-hidden"
       >
-        <div className="relative overflow-hidden rounded-lg aspect-[3/4] mb-4">
-          <img
-            src={exhibition.imageUrl}
-            alt={exhibition.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#111311]/80 via-transparent to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6">
-            <p className="text-[#d4af37] text-sm mb-2">{dateRange}</p>
-            <h3 className="text-[#f8f4e3] text-xl font-[var(--font-cormorant)] font-medium mb-1">
-              {exhibition.title}
-            </h3>
+        <div className="ge-art-mat">
+          <div className="aspect-[4/5] overflow-hidden">
+            <img src={exhibition.imageUrl} alt={exhibition.title} className="h-full w-full object-cover" />
           </div>
         </div>
-      </motion.div>
+        <div className="p-6">
+          <p className="mb-3 font-mono text-xs tracking-[0.04em] text-[var(--color-fg-muted)]">{dateRange}</p>
+          <h3 className="font-[var(--font-display)] text-2xl font-normal italic leading-tight text-[var(--color-ink)]">
+            {exhibition.title}
+          </h3>
+          {exhibition.description && (
+            <p className="mt-4 line-clamp-3 text-sm leading-7 text-[var(--color-fg-muted)]">{exhibition.description}</p>
+          )}
+        </div>
+      </motion.article>
     </Link>
   );
 }
 
-// 섹션 컴포넌트
-function ExhibitionSection({ 
-  title, 
-  exhibitions, 
+function ExhibitionSection({
+  kicker,
+  title,
+  exhibitions,
   link,
-  loading
-}: { 
-  title: string; 
+  loading,
+}: {
+  kicker: string;
+  title: string;
   exhibitions: Exhibition[];
   link: string;
   loading: boolean;
 }) {
   const tc = useTranslations('common');
+
   return (
-    <section className="py-20 px-8 md:px-24">
-      <div className="flex justify-between items-center mb-12">
-        <motion.h2
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-3xl md:text-4xl font-[var(--font-cormorant)] text-[#f8f4e3]"
-        >
-          {title}
-        </motion.h2>
-        <Link href={link}>
-          <motion.span
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-[#7c8d4c] text-sm tracking-wider hover:text-[#d4af37] transition-colors flex items-center gap-2"
-          >
-            {tc('viewAll')} <ArrowRight className="w-4 h-4" />
-          </motion.span>
-        </Link>
-      </div>
-      
-      {loading ? (
-        <div className="text-[#ccc5b9] text-center py-12">{tc('loading')}</div>
-      ) : exhibitions.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center py-16"
-        >
-          <p className="text-[#ccc5b9] text-lg font-[var(--font-cormorant)] tracking-wider">
-            {tc('comingSoon')}
-          </p>
-        </motion.div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {exhibitions.slice(0, 3).map((exhibition, index) => (
-            <ExhibitionCard key={exhibition.id} exhibition={exhibition} index={index} />
-          ))}
+    <section className="border-t border-[var(--color-border)] bg-[var(--color-bg)] py-20 md:py-24">
+      <div className="ge-container">
+        <div className="mb-10 flex items-end justify-between gap-6">
+          <div>
+            <p className="ge-kicker mb-3">{kicker}</p>
+            <h2 className="font-[var(--font-display)] text-4xl font-light leading-tight text-[var(--color-ink)] md:text-5xl">
+              {title}
+            </h2>
+          </div>
+          <Link href={link} className="ge-btn-secondary hidden sm:inline-flex">
+            {tc('viewAll')}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-      )}
+
+        {loading ? (
+          <p className="py-16 text-center text-[var(--color-fg-muted)]">{tc('loading')}</p>
+        ) : exhibitions.length === 0 ? (
+          <div className="border-y border-[var(--color-border)] py-16 text-center">
+            <p className="ge-lead">{tc('comingSoon')}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {exhibitions.slice(0, 3).map((exhibition, index) => (
+              <ExhibitionCard key={exhibition.id} exhibition={exhibition} index={index} />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
 export default function GalleryLanding() {
   const t = useTranslations();
+  const locale = useLocale();
   const [currentExhibitions, setCurrentExhibitions] = useState<Exhibition[]>([]);
   const [pastExhibitions, setPastExhibitions] = useState<Exhibition[]>([]);
   const [upcomingExhibitions, setUpcomingExhibitions] = useState<Exhibition[]>([]);
@@ -136,205 +120,173 @@ export default function GalleryLanding() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchHomeImages = async () => {
+    async function fetchHomeImages() {
       try {
         const response = await fetch('/api/home-images');
-        if (response.ok) {
-          const data: SlideData[] = await response.json();
-          setHomeSlides(data);
-        }
+        if (response.ok) setHomeSlides(await response.json());
       } catch (error) {
         console.error('Failed to fetch home images:', error);
       }
-    };
+    }
 
-    const fetchFeaturedNotice = async () => {
+    async function fetchFeaturedNotice() {
       try {
         const response = await fetch('/api/notices/featured');
-        if (response.ok) {
-          const data = await response.json();
-          setFeaturedNotice(data);
-        }
+        if (response.ok) setFeaturedNotice(await response.json());
       } catch (error) {
         console.error('Failed to fetch featured notice:', error);
       }
-    };
+    }
 
     fetchHomeImages();
     fetchFeaturedNotice();
   }, []);
 
   useEffect(() => {
-    const fetchExhibitions = async () => {
+    async function fetchExhibitions() {
       try {
         const response = await fetch('/api/exhibitions');
-        if (response.ok) {
-          const data: Exhibition[] = await response.json();
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+        if (!response.ok) return;
 
-          const current: Exhibition[] = [];
-          const past: Exhibition[] = [];
-          const upcoming: Exhibition[] = [];
+        const data: Exhibition[] = await response.json();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-          data.forEach(exhibition => {
-            if (!exhibition.startDate || !exhibition.endDate) {
-              // 날짜가 없으면 과거로 분류
-              past.push(exhibition);
-              return;
-            }
+        const current: Exhibition[] = [];
+        const past: Exhibition[] = [];
+        const upcoming: Exhibition[] = [];
 
-            const startDate = new Date(exhibition.startDate);
-            const endDate = new Date(exhibition.endDate);
-            startDate.setHours(0, 0, 0, 0);
-            endDate.setHours(23, 59, 59, 999);
+        data.forEach((exhibition) => {
+          const startDate = new Date(exhibition.startDate);
+          const endDate = new Date(exhibition.endDate);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
 
-            if (startDate > today) {
-              upcoming.push(exhibition);
-            } else if (endDate < today) {
-              past.push(exhibition);
-            } else {
-              current.push(exhibition);
-            }
-          });
+          if (startDate > today) upcoming.push(exhibition);
+          else if (endDate < today) past.push(exhibition);
+          else current.push(exhibition);
+        });
 
-          // 과거 전시: 종료일 기준 내림차순 정렬 (최신 종료 전시가 먼저)
-          past.sort((a, b) => {
-            const dateA = a.endDate ? new Date(a.endDate).getTime() : 0;
-            const dateB = b.endDate ? new Date(b.endDate).getTime() : 0;
-            return dateB - dateA;
-          });
+        past.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+        upcoming.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-          // 예정 전시: 시작일 기준 오름차순 정렬 (가장 빨리 시작하는 전시가 먼저)
-          upcoming.sort((a, b) => {
-            const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-            const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-            return dateA - dateB;
-          });
-
-          setCurrentExhibitions(current);
-          setPastExhibitions(past);
-          setUpcomingExhibitions(upcoming);
-        }
+        setCurrentExhibitions(current);
+        setPastExhibitions(past);
+        setUpcomingExhibitions(upcoming);
       } catch (error) {
         console.error('Failed to fetch exhibitions:', error);
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchExhibitions();
   }, []);
 
+  const primaryExhibition = currentExhibitions[0] || upcomingExhibitions[0];
+
   return (
-    <div className="w-full bg-[#111311]">
-      {/* 히어로 섹션 - 이미지 슬라이더 */}
-      <div className="h-screen relative overflow-hidden">
-        {/* 슬라이더 배경 */}
-        <div className="absolute inset-0 z-0">
-          <HeroSlider 
-            slides={homeSlides} 
+    <div className="ge-page">
+      <Navigation />
+
+      <section className="relative min-h-[92vh] overflow-hidden bg-[var(--color-green-900)]">
+        <div className="absolute inset-0">
+          <HeroSlider
+            slides={homeSlides}
             effect={SLIDER_EFFECT}
-            autoPlay={true}
+            autoPlay
             interval={5000}
-            showArrows={true}
-            showDots={true}
+            showArrows={false}
+            showDots
           />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(14,45,26,0.88)] via-[rgba(14,45,26,0.54)] to-[rgba(14,45,26,0.12)]" />
 
-        {/* 네비게이션 */}
-        <Navigation />
-
-        {/* 메인 콘텐츠 - 갤러리 타이틀 */}
-        <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center px-8 md:px-24 pointer-events-none z-10">
+        <div className="ge-container relative z-10 flex min-h-[92vh] items-center pb-20 pt-28">
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.5 }}
+            transition={{ duration: 0.7 }}
+            className="max-w-3xl"
           >
-            <h2 className="text-[#ccc5b9] text-lg md:text-xl font-light tracking-[0.3em] mb-4 uppercase">
-              {t('home.subtitle')}
-            </h2>
-            <h1 className="text-5xl md:text-8xl font-[var(--font-cormorant)] font-light text-[#f8f4e3] leading-tight mb-8 drop-shadow-xl">
-              <span className="text-[#7c8d4c]">{t('home.title')}</span> {t('home.titleHighlight')}
+            <p className="ge-kicker mb-5">{t('home.subtitle')}</p>
+            <h1 className="font-[var(--font-display)] text-[clamp(54px,10vw,116px)] font-light leading-[0.96] text-white">
+              {t('home.title')} <span className="italic text-[var(--color-gold)]">{t('home.titleHighlight')}</span>
             </h1>
-            
-            <div className="pointer-events-auto flex flex-wrap items-center gap-4">
-                <Link href="/book">
-                  <button className="group flex items-center gap-4 bg-[#7c8d4c] text-[#f8f4e3] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#6a7a40] transition-all shadow-[0_0_25px_rgba(124,141,76,0.3)]">
-                      {t('home.cta')}
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+            <p className="mt-8 max-w-xl font-[var(--font-display)] text-2xl font-light italic leading-relaxed text-white/70">
+              Curated with intention. Available for your walls.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Link href="/book" className="ge-btn bg-white text-[var(--color-primary)] hover:bg-[var(--color-warm-gray-50)]">
+                {t('home.cta')}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              {featuredNotice && (
+                <Link href={`/notice/${featuredNotice.id}`} className="ge-btn-secondary border-white/50 text-white hover:bg-white/10">
+                  {t('home.callForArtists')}
                 </Link>
-                {featuredNotice && (
-                  <Link href={`/notice/${featuredNotice.id}`}>
-                    <button className="group flex items-center gap-3 border border-[#d4af37]/60 text-[#d4af37] px-8 py-4 rounded-full text-lg font-medium hover:bg-[#d4af37]/10 hover:border-[#d4af37] transition-all">
-                      {t('home.callForArtists')}
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </Link>
-                )}
+              )}
             </div>
           </motion.div>
         </div>
+      </section>
 
-        {/* 스크롤 인디케이터 */}
-        <motion.div 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          <ChevronDown className="w-8 h-8 text-[#d4af37]" />
-        </motion.div>
-      </div>
-
-      {/* 현재 전시 섹션 */}
-      <ExhibitionSection 
-        title={t('home.currentExhibition')} 
-        exhibitions={currentExhibitions}
-        link="/exhibition/current"
-        loading={loading}
-      />
-
-      {/* 구분선 */}
-      <div className="px-8 md:px-24">
-        <div className="border-t border-[#7c8d4c]/20" />
-      </div>
-
-      {/* 예정 전시 섹션 */}
-      <ExhibitionSection 
-        title={t('home.upcomingExhibition')} 
-        exhibitions={upcomingExhibitions}
-        link="/exhibition/upcoming"
-        loading={loading}
-      />
-
-      {/* 구분선 */}
-      <div className="px-8 md:px-24">
-        <div className="border-t border-[#7c8d4c]/20" />
-      </div>
-
-      {/* 지난 전시 섹션 */}
-      <ExhibitionSection 
-        title={t('home.pastExhibition')} 
-        exhibitions={pastExhibitions}
-        link="/exhibition/past"
-        loading={loading}
-      />
-
-      {/* 푸터 */}
-      <footer className="py-16 px-8 md:px-24 border-t border-[#7c8d4c]/20">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="text-[#7c8d4c] font-[var(--font-cormorant)] text-2xl">
-            Gallery Époque
+      {primaryExhibition && (
+        <section className="bg-[var(--color-green-800)] py-16 text-white">
+          <div className="ge-container grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <span className="ge-badge mb-5">{currentExhibitions[0] ? 'Now showing' : 'Upcoming'}</span>
+              <h2 className="font-[var(--font-display)] text-4xl font-light leading-tight md:text-6xl">{primaryExhibition.title}</h2>
+              <p className="mt-4 font-mono text-xs text-white/55">
+                {formatDate(primaryExhibition.startDate, locale)} - {formatDate(primaryExhibition.endDate, locale)}
+              </p>
+            </div>
+            <Link href={`/exhibition/${primaryExhibition.id}`} className="ge-btn bg-white text-[var(--color-primary)] hover:bg-[var(--color-warm-gray-50)]">
+              View Exhibition
+            </Link>
           </div>
-          <div className="text-[#ccc5b9] text-sm text-center md:text-right">
-            <p>{t('home.footerAddress')}</p>
-            <p className="mt-1">Tel. 02-723-3420 | galleryepoque@naver.com</p>
+        </section>
+      )}
+
+      <ExhibitionSection kicker="Programme" title={t('home.currentExhibition')} exhibitions={currentExhibitions} link="/exhibition/current" loading={loading} />
+      <ExhibitionSection kicker="Next" title={t('home.upcomingExhibition')} exhibitions={upcomingExhibitions} link="/exhibition/upcoming" loading={loading} />
+      <ExhibitionSection kicker="Archive" title={t('home.pastExhibition')} exhibitions={pastExhibitions} link="/exhibition/past" loading={loading} />
+
+      <section className="bg-[var(--color-green-800)] py-24 text-white">
+        <div className="ge-container grid gap-12 md:grid-cols-[1fr_0.9fr] md:items-center">
+          <div>
+            <p className="ge-kicker mb-4">Our Story</p>
+            <h2 className="font-[var(--font-display)] text-5xl font-light leading-tight">
+              A refined gallery for contemporary work.
+            </h2>
+            <p className="mt-6 max-w-xl font-[var(--font-display)] text-xl font-light italic leading-relaxed text-white/65">
+              We introduce exhibitions, artists, and collectable works with a calm, intentional point of view.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ['10+', 'Exhibitions'],
+              ['2F', 'Gallery space'],
+              ['2025', 'Seoul'],
+              ['100%', 'Curated'],
+            ].map(([value, label]) => (
+              <div key={label} className="border border-white/10 bg-white/[0.06] p-6">
+                <div className="font-[var(--font-display)] text-4xl font-light">{value}</div>
+                <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/45">{label}</div>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="mt-8 text-center text-[#7c8d4c]/50 text-xs">
-          {t('home.footerCopyright')}
+      </section>
+
+      <footer className="border-t border-[var(--color-border)] bg-white py-14">
+        <div className="ge-container flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <img src="/logo.svg" alt="Gallery Epoque" className="h-10 w-auto" />
+          <div className="text-sm text-[var(--color-fg-muted)] md:text-right">
+            <p>{t('home.footerAddress')}</p>
+            <p className="mt-1">Tel. 02-723-3420 | galleryepoque@naver.com</p>
+            <p className="mt-5 font-mono text-xs text-[var(--color-fg-faint)]">{t('home.footerCopyright')}</p>
+          </div>
         </div>
       </footer>
     </div>

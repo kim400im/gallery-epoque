@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F7F4EF; font-family: 'Jost', sans-serif; padding: 24px; }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .swatch { flex: 1; border-radius: 2px; overflow: hidden; }
+  .swatch-color { height: 72px; }
+  .swatch-info { padding: 8px; background: white; }
+  .swatch-name { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #1A1A18; }
+  .swatch-hex  { font-family: monospace; font-size: 10px; color: #8C8679; margin-top: 2px; }
+  .swatch-role { font-size: 10px; color: #C4BFB8; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="swatch">
+    <div class="swatch-color" style="background:#1A1A18"></div>
+    <div class="swatch-info"><div class="swatch-name">Ink</div><div class="swatch-hex">#1A1A18</div><div class="swatch-role">Primary Text</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#3A3A37"></div>
+    <div class="swatch-info"><div class="swatch-name">Ink Light</div><div class="swatch-hex">#3A3A37</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#5C5750"></div>
+    <div class="swatch-info"><div class="swatch-name">Gray 700</div><div class="swatch-hex">#5C5750</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#8C8679"></div>
+    <div class="swatch-info"><div class="swatch-name">Gray 500</div><div class="swatch-hex">#8C8679</div><div class="swatch-role">Muted Text</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#C4BFB8; border:1px solid #E0DDD7;"></div>
+    <div class="swatch-info"><div class="swatch-name">Gray 300</div><div class="swatch-hex">#C4BFB8</div><div class="swatch-role">Faint</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#E0DDD7; border:1px solid #E0DDD7;"></div>
+    <div class="swatch-info"><div class="swatch-name">Gray 100</div><div class="swatch-hex">#E0DDD7</div><div class="swatch-role">Border</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#F2F0EC; border:1px solid #E0DDD7;"></div>
+    <div class="swatch-info"><div class="swatch-name">Gray 50</div><div class="swatch-hex">#F2F0EC</div><div class="swatch-role">Subtle BG</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#F7F4EF; border:1px solid #E0DDD7;"></div>
+    <div class="swatch-info"><div class="swatch-name">Cream</div><div class="swatch-hex">#F7F4EF</div><div class="swatch-role">Page BG</div></div>
+  </div>
+  <div class="swatch">
+    <div class="swatch-color" style="background:#FFFFFF; border:1px solid #E0DDD7;"></div>
+    <div class="swatch-info"><div class="swatch-name">White</div><div class="swatch-hex">#FFFFFF</div><div class="swatch-role">Surface</div></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getNotice } from '@/lib/pocketbase-data'
 
 export async function GET(
   _request: NextRequest,
@@ -7,16 +7,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const notice = await prisma.notice.findUnique({
-      where: { id },
-      include: { attachments: true },
-    })
-    if (!notice) {
-      return NextResponse.json({ error: '공지사항을 찾을 수 없습니다.' }, { status: 404 })
-    }
-    return NextResponse.json(notice)
+    return NextResponse.json(await getNotice(id))
   } catch (error) {
     console.error('Failed to fetch notice:', error)
-    return NextResponse.json({ error: 'Failed to fetch notice' }, { status: 500 })
+    return NextResponse.json({ error: 'Notice not found' }, { status: 404 })
   }
 }

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F2F0EC; font-family: 'Jost', sans-serif; padding: 28px 32px; }
+  .section { margin-bottom: 28px; }
+  .section-title { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #8C8679; margin-bottom: 16px; }
+  .shadow-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .shadow-box { background: white; width: 96px; height: 56px; border-radius: 2px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
+  .shadow-label { font-size: 10px; color: #8C8679; font-family: monospace; }
+  .radius-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .radius-box { background: #1A4D2E; width: 64px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .radius-val { font-size: 9px; color: rgba(255,255,255,0.6); font-family: monospace; }
+</style>
+</head>
+<body>
+  <div class="section">
+    <div class="section-title">Shadow System</div>
+    <div class="shadow-row">
+      <div><div class="shadow-box" style="box-shadow: 0 1px 3px rgba(26,26,24,0.06)"><div class="shadow-label">xs</div></div></div>
+      <div><div class="shadow-box" style="box-shadow: 0 2px 8px rgba(26,26,24,0.08)"><div class="shadow-label">sm</div></div></div>
+      <div><div class="shadow-box" style="box-shadow: 0 4px 16px rgba(26,26,24,0.10)"><div class="shadow-label">md</div></div></div>
+      <div><div class="shadow-box" style="box-shadow: 0 8px 24px rgba(26,26,24,0.14)"><div class="shadow-label">lg</div></div></div>
+      <div><div class="shadow-box" style="box-shadow: 0 16px 48px rgba(26,26,24,0.18)"><div class="shadow-label">xl</div></div></div>
+      <div><div class="shadow-box" style="box-shadow: 0 24px 64px rgba(26,26,24,0.22)"><div class="shadow-label">2xl</div></div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Border Radius</div>
+    <div class="radius-row">
+      <div><div class="radius-box" style="border-radius:0"><div class="radius-val">none / 0</div></div></div>
+      <div><div class="radius-box" style="border-radius:2px"><div class="radius-val">sm / 2px</div></div></div>
+      <div><div class="radius-box" style="border-radius:4px"><div class="radius-val">md / 4px</div></div></div>
+      <div><div class="radius-box" style="border-radius:999px; width:80px;"><div class="radius-val">pill</div></div></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galley Époque — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body { font-family: 'Jost', sans-serif; background: #F2F0EC; color: #1A1A18; -webkit-font-smoothing: antialiased; }
+  button { cursor: pointer; font-family: 'Jost', sans-serif; }
+  input, textarea, select { font-family: 'Jost', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #C4BFB8; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const INITIAL_WORKS = [
+  { id: 1, title: 'Coastal Light, No. 4', medium: 'Photography', catalog: 'GE-2024-0047', price: 1200, dimensions: '60×90 cm', bg: 'linear-gradient(135deg,#4A7C59,#1A4D2E)', status: 'available', featured: true,  year: '2024', views: 142, enquiries: 3 },
+  { id: 2, title: 'Golden Hour Study',    medium: 'Painting',     catalog: 'GE-2024-0031', price: 3400, dimensions: '80×100 cm', bg: 'linear-gradient(160deg,#C9A84C,#8B6B1A)', status: 'available', featured: false, year: '2024', views: 98,  enquiries: 5 },
+  { id: 3, title: 'Evening Silence',      medium: 'Painting',     catalog: 'GE-2023-0019', price: 2100, dimensions: '50×70 cm',  bg: 'linear-gradient(135deg,#8C8679,#3A3A37)', status: 'sold',      featured: false, year: '2023', views: 210, enquiries: 8 },
+  { id: 4, title: 'After the Rain',       medium: 'Photography',  catalog: 'GE-2024-0052', price: 900,  dimensions: '40×60 cm',  bg: 'linear-gradient(160deg,#6A9E78,#235E39)', status: 'available', featured: false, year: '2024', views: 76,  enquiries: 1 },
+  { id: 5, title: 'Urban Geometry III',   medium: 'Print',        catalog: 'GE-2024-0038', price: 650,  dimensions: '50×50 cm',  bg: 'linear-gradient(135deg,#5C5750,#1A1A18)', status: 'available', featured: false, year: '2024', views: 54,  enquiries: 0 },
+  { id: 6, title: 'Blossom Meditation',   medium: 'Painting',     catalog: 'GE-2024-0044', price: 4800, dimensions: '100×120 cm',bg: 'linear-gradient(135deg,#A8C99A,#4A7C59)', status: 'available', featured: false, year: '2024', views: 89,  enquiries: 2 },
+  { id: 7, title: 'Still Life, Sunday',   medium: 'Photography',  catalog: 'GE-2023-0061', price: 780,  dimensions: '30×40 cm',  bg: 'linear-gradient(160deg,#E2C97A,#C9A84C)', status: 'hidden',    featured: false, year: '2023', views: 31,  enquiries: 0 },
+];
+
+// ── Shared primitives ─────────────────────────────────────────────────────────
+
+const C = {
+  green900: '#0E2D1A', green800: '#1A4D2E', green700: '#235E39',
+  green500: '#4A7C59', green300: '#7FB069', green50: '#EEF6E9',
+  gold: '#C9A84C', goldLight: '#F5EDD0',
+  ink: '#1A1A18', inkLight: '#3A3A37',
+  gray700: '#5C5750', gray500: '#8C8679', gray300: '#C4BFB8',
+  gray100: '#E0DDD7', gray50: '#F2F0EC',
+  cream: '#F7F4EF', white: '#FFFFFF',
+  red: '#C0392B', redLight: '#FDECEA',
+};
+
+const StatusBadge = ({ status }) => {
+  const map = { available: [C.green50, C.green700], sold: [C.gray50, C.gray500], hidden: ['#FFF8E1','#B8860B'], featured: [C.goldLight, '#8B6B1A'] };
+  const [bg, col] = map[status] || map.available;
+  return <span style={{ fontFamily:'Jost,sans-serif', fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', background:bg, color:col, padding:'3px 9px', borderRadius:'999px' }}>{status}</span>;
+};
+
+const Btn = ({ children, variant='primary', size='md', onClick, type='button', disabled }) => {
+  const base = { fontFamily:'Jost,sans-serif', fontWeight:600, letterSpacing:'0.07em', textTransform:'uppercase', borderRadius:'2px', border:'none', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.45 : 1, transition:'background 150ms' };
+  const sizes = { sm: { fontSize:'11px', padding:'7px 14px' }, md: { fontSize:'12px', padding:'10px 20px' }, lg: { fontSize:'13px', padding:'13px 28px' } };
+  const variants = {
+    primary:   { background: C.green800, color: '#fff' },
+    secondary: { background: 'transparent', color: C.green800, border: `1.5px solid ${C.green800}` },
+    ghost:     { background: 'transparent', color: C.gray500, border: `1px solid ${C.gray100}` },
+    danger:    { background: 'transparent', color: C.red, border: `1px solid #E8B4B0` },
+    gold:      { background: C.gold, color: C.ink },
+  };
+  return <button type={type} onClick={onClick} disabled={disabled} style={{ ...base, ...sizes[size], ...variants[variant] }}>{children}</button>;
+};
+
+const Field = ({ label, hint, error, children }) => (
+  <div style={{ display:'flex', flexDirection:'column', gap:'5px' }}>
+    {label && <label style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color: C.gray700 }}>{label}</label>}
+    {children}
+    {hint  && <span style={{ fontSize:'11px', color: C.gray300 }}>{hint}</span>}
+    {error && <span style={{ fontSize:'11px', color: C.red }}>{error}</span>}
+  </div>
+);
+
+const Input = ({ value, onChange, placeholder, type='text', required }) => (
+  <input
+    type={type} value={value} onChange={onChange} placeholder={placeholder} required={required}
+    style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'10px 13px', fontSize:'14px', color: C.ink, outline:'none', width:'100%' }}
+  />
+);
+
+const Select = ({ value, onChange, children }) => (
+  <select value={value} onChange={onChange}
+    style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'10px 13px', fontSize:'14px', color: C.ink, outline:'none', width:'100%', appearance:'none' }}>
+    {children}
+  </select>
+);
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
+const NAV_ITEMS = [
+  { id:'overview',       label:'Overview' },
+  { id:'works',          label:'Manage Works' },
+  { id:'upload',         label:'Upload New Work' },
+  { id:'exhibitions',    label:'Exhibitions' },
+  { id:'artists',        label:'Artists' },
+  { id:'announcements',  label:'Announcements' },
+  { id:'slideshow',      label:'Hero Slideshow' },
+];
+
+const Sidebar = ({ screen, onNavigate, onLogout }) => (
+  <aside style={{ width:'220px', flexShrink:0, background: C.green900, display:'flex', flexDirection:'column', height:'100vh', position:'sticky', top:0 }}>
+    {/* Logo */}
+    <div style={{ padding:'28px 24px 24px', borderBottom:`1px solid rgba(255,255,255,0.08)` }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+        <div style={{ width:'30px', height:'30px', border:'2px solid rgba(255,255,255,0.7)', borderRadius:'1px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:'18px', height:'18px', border:'1px solid rgba(255,255,255,0.5)', borderRadius:'0.5px' }}></div>
+        </div>
+        <div>
+          <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'14px', fontWeight:300, color:'#fff', letterSpacing:'0.18em', lineHeight:1 }}>GALLEY</div>
+          <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'10px', fontWeight:300, fontStyle:'italic', color:'rgba(255,255,255,0.5)', letterSpacing:'0.28em', lineHeight:1, marginTop:'2px' }}>Époque</div>
+        </div>
+      </div>
+      <div style={{ marginTop:'10px', fontSize:'10px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', color: C.gold }}>Admin Panel</div>
+    </div>
+
+    {/* Nav */}
+    <nav style={{ flex:1, padding:'16px 12px', display:'flex', flexDirection:'column', gap:'2px' }}>
+      {NAV_ITEMS.map(item => {
+        const active = screen === item.id;
+        return (
+          <button key={item.id} onClick={() => onNavigate(item.id)}
+            style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'2px', border:'none', background: active ? 'rgba(255,255,255,0.1)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.5)', fontSize:'13px', fontWeight: active ? 500 : 400, letterSpacing:'0.02em', cursor:'pointer', textAlign:'left', borderLeft: active ? `2px solid ${C.gold}` : '2px solid transparent', transition:'all 150ms' }}>
+            <NavIcon id={item.id} active={active} />
+            {item.label}
+          </button>
+        );
+      })}
+    </nav>
+
+    {/* Footer */}
+    <div style={{ padding:'16px 12px', borderTop:`1px solid rgba(255,255,255,0.08)` }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', marginBottom:'4px' }}>
+        <div style={{ width:'28px', height:'28px', borderRadius:'999px', background: C.green700, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', color:'rgba(255,255,255,0.8)', fontWeight:600 }}>A</div>
+        <div>
+          <div style={{ fontSize:'12px', color:'#fff', fontWeight:500 }}>Admin</div>
+          <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)' }}>gallery@galleyepoque.com</div>
+        </div>
+      </div>
+      <button onClick={onLogout} style={{ width:'100%', padding:'8px 12px', background:'transparent', border:'none', color:'rgba(255,255,255,0.35)', fontSize:'12px', letterSpacing:'0.04em', cursor:'pointer', textAlign:'left' }}>Sign out →</button>
+    </div>
+  </aside>
+);
+
+const NavIcon = ({ id, active }) => {
+  const col = active ? '#fff' : 'rgba(255,255,255,0.45)';
+  const icons = {
+    overview:      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round"><rect x="1" y="1" width="6" height="6" rx="0.5"/><rect x="9" y="1" width="6" height="6" rx="0.5"/><rect x="1" y="9" width="6" height="6" rx="0.5"/><rect x="9" y="9" width="6" height="6" rx="0.5"/></svg>,
+    works:         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round"><rect x="1" y="3" width="14" height="10" rx="0.5"/><path d="M5 3V2M11 3V2"/><path d="M1 7h14"/></svg>,
+    upload:        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M8 11V4M5 7l3-3 3 3"/><path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>,
+    artists:       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-4.5 5-4.5s5 1.5 5 4.5"/><circle cx="12" cy="5" r="2"/><path d="M14 13c0-2-1-3.5-2-4"/></svg>,
+    announcements: <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 5h12v7a1 1 0 01-1 1H3a1 1 0 01-1-1V5z"/><path d="M5 5V3.5a3 3 0 016 0V5"/><path d="M5 9h6M5 11.5h4"/></svg>,
+    slideshow:     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M6 8l3 2-3 2V8z" fill={col} stroke="none"/></svg>,
+    exhibitions:   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={col} strokeWidth="1.4" strokeLinecap="round"><rect x="1" y="5" width="14" height="9" rx="0.5"/><path d="M4 5V4a4 4 0 018 0v1"/><path d="M8 9v2"/></svg>,
+  };
+  return icons[id] || null;
+};
+
+// ── Login Screen ──────────────────────────────────────────────────────────────
+
+const LoginScreen = ({ onLogin }) => {
+  const [email, setEmail] = React.useState('admin@galleyepoque.com');
+  const [pass, setPass]   = React.useState('');
+  const [err, setErr]     = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+
+  const submit = e => {
+    e.preventDefault();
+    setErr('');
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogin(); }, 900);
+  };
+
+  return (
+    <div style={{ minHeight:'100vh', background: C.green900, display:'flex', alignItems:'center', justifyContent:'center', padding:'32px' }}>
+      <div style={{ width:'100%', maxWidth:'400px' }}>
+        {/* Logo */}
+        <div style={{ textAlign:'center', marginBottom:'40px' }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
+            <div style={{ width:'38px', height:'38px', border:'2.5px solid rgba(255,255,255,0.7)', borderRadius:'1px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ width:'24px', height:'24px', border:'1.5px solid rgba(255,255,255,0.4)', borderRadius:'0.5px' }}></div>
+            </div>
+            <div style={{ width:'1px', height:'28px', background: C.gold }}></div>
+            <div>
+              <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontWeight:300, color:'#fff', letterSpacing:'0.18em', lineHeight:1 }}>GALLEY</div>
+              <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'13px', fontWeight:300, fontStyle:'italic', color:'rgba(255,255,255,0.55)', letterSpacing:'0.3em', lineHeight:1, marginTop:'3px' }}>Époque</div>
+            </div>
+          </div>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color: C.gold, marginTop:'12px' }}>Admin Access</div>
+        </div>
+
+        {/* Card */}
+        <div style={{ background:'#fff', borderRadius:'2px', padding:'36px', boxShadow:'0 24px 64px rgba(0,0,0,0.3)' }}>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'26px', fontWeight:300, color: C.ink, marginBottom:'24px', letterSpacing:'-0.01em' }}>Sign in</h2>
+          <form onSubmit={submit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+            <Field label="Email Address">
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@galleyepoque.com" required />
+            </Field>
+            <Field label="Password" error={err}>
+              <Input type="password" value={pass} onChange={e => { setPass(e.target.value); setErr(''); }} placeholder="••••••••" required />
+            </Field>
+            <Btn type="submit" variant="primary" size="lg" disabled={loading}>{loading ? 'Signing in…' : 'Sign In'}</Btn>
+          </form>
+          <p style={{ marginTop:'16px', fontSize:'11px', color: C.gray300, textAlign:'center' }}>Use any password to continue (prototype)</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Overview Screen ───────────────────────────────────────────────────────────
+
+const StatCard = ({ label, value, sub, accent }) => (
+  <div style={{ background:'#fff', borderRadius:'2px', padding:'24px', boxShadow:`0 2px 8px rgba(26,26,24,0.06)`, borderTop: accent ? `2px solid ${accent}` : undefined }}>
+    <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', color: C.gray500, marginBottom:'10px' }}>{label}</div>
+    <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'40px', fontWeight:300, color: C.ink, lineHeight:1 }}>{value}</div>
+    {sub && <div style={{ fontSize:'12px', color: C.gray300, marginTop:'6px' }}>{sub}</div>}
+  </div>
+);
+
+const OverviewScreen = ({ works, onNavigate }) => {
+  const available = works.filter(w => w.status === 'available').length;
+  const sold = works.filter(w => w.status === 'sold').length;
+  const totalValue = works.filter(w => w.status === 'available').reduce((a, w) => a + w.price, 0);
+  const totalEnquiries = works.reduce((a, w) => a + w.enquiries, 0);
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'1100px' }}>
+      <div style={{ marginBottom:'32px' }}>
+        <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color: C.gray500, marginBottom:'6px' }}>Good morning</div>
+        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color: C.ink, letterSpacing:'-0.01em' }}>Gallery Overview</h1>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'36px' }}>
+        <StatCard label="Total Works" value={works.length} sub={`${available} available`} accent={C.green800} />
+        <StatCard label="Sold Works" value={sold} sub="All time" accent={C.gold} />
+        <StatCard label="Available Value" value={`€${(totalValue/1000).toFixed(1)}k`} sub="Combined asking" />
+        <StatCard label="Enquiries" value={totalEnquiries} sub="Across all works" accent={C.green500} />
+      </div>
+
+      {/* Recent works */}
+      <div style={{ background:'#fff', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', overflow:'hidden' }}>
+        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.gray100}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div style={{ fontSize:'13px', fontWeight:600, color: C.ink, letterSpacing:'0.02em' }}>Recent Uploads</div>
+          <Btn variant="ghost" size="sm" onClick={() => onNavigate('works')}>View All</Btn>
+        </div>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background: C.gray50 }}>
+              {['Work', 'Medium', 'Price', 'Status', 'Views', 'Enquiries'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color: C.gray500, textAlign:'left', borderBottom:`1px solid ${C.gray100}` }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {works.slice(0,5).map((w, i) => (
+              <tr key={w.id} style={{ borderBottom: i < 4 ? `1px solid ${C.gray100}` : 'none' }}>
+                <td style={{ padding:'13px 16px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                    <div style={{ width:'32px', height:'32px', borderRadius:'1px', background: w.bg, flexShrink:0 }}></div>
+                    <div>
+                      <div style={{ fontSize:'13px', fontStyle:'italic', fontFamily:"'Cormorant Garamond',serif", color: C.ink }}>{w.title}</div>
+                      <div style={{ fontSize:'10px', fontFamily:'monospace', color: C.gray300 }}>{w.catalog}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style={{ padding:'13px 16px', fontSize:'12px', color: C.gray500 }}>{w.medium}</td>
+                <td style={{ padding:'13px 16px', fontSize:'13px', fontWeight:500, color: C.gold }}>€{w.price.toLocaleString()}</td>
+                <td style={{ padding:'13px 16px' }}><StatusBadge status={w.status} /></td>
+                <td style={{ padding:'13px 16px', fontSize:'12px', color: C.gray500 }}>{w.views}</td>
+                <td style={{ padding:'13px 16px', fontSize:'12px', color: w.enquiries > 0 ? C.green700 : C.gray300, fontWeight: w.enquiries > 0 ? 600 : 400 }}>{w.enquiries}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ── Manage Works Screen ───────────────────────────────────────────────────────
+
+const ManageWorksScreen = ({ works, setWorks, onEdit }) => {
+  const [filter, setFilter] = React.useState('all');
+  const [confirmDelete, setConfirmDelete] = React.useState(null);
+
+  const filtered = filter === 'all' ? works : works.filter(w => w.status === filter);
+
+  const toggleStatus = (id) => {
+    setWorks(ws => ws.map(w => w.id === id ? { ...w, status: w.status === 'available' ? 'hidden' : 'available' } : w));
+  };
+  const toggleFeatured = (id) => {
+    setWorks(ws => ws.map(w => w.id === id ? { ...w, featured: !w.featured } : w));
+  };
+  const deleteWork = (id) => {
+    setWorks(ws => ws.filter(w => w.id !== id));
+    setConfirmDelete(null);
+  };
+
+  const FILTERS = [['all','All'],['available','Available'],['sold','Sold'],['hidden','Hidden']];
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'1100px' }}>
+      <div style={{ marginBottom:'28px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+        <div>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color: C.gray500, marginBottom:'6px' }}>{works.length} works total</div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color: C.ink, letterSpacing:'-0.01em' }}>Manage Works</h1>
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      <div style={{ display:'flex', gap:'8px', marginBottom:'20px', flexWrap:'wrap' }}>
+        {FILTERS.map(([val, label]) => (
+          <button key={val} onClick={() => setFilter(val)}
+            style={{ fontFamily:'Jost,sans-serif', fontSize:'12px', fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase', background: filter===val ? C.green800 : 'transparent', color: filter===val ? '#fff' : C.gray500, border:`1px solid ${filter===val ? C.green800 : C.gray100}`, padding:'7px 16px', borderRadius:'2px', cursor:'pointer' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div style={{ background:'#fff', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', overflow:'hidden' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background: C.gray50 }}>
+              {['Work','Medium','Price','Status','Featured','Actions'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color: C.gray500, textAlign:'left', borderBottom:`1px solid ${C.gray100}` }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((w, i) => (
+              <tr key={w.id} style={{ borderBottom: i < filtered.length-1 ? `1px solid ${C.gray100}` : 'none', opacity: w.status === 'hidden' ? 0.6 : 1 }}>
+                <td style={{ padding:'14px 16px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                    <div style={{ width:'40px', height:'40px', borderRadius:'1px', background: w.bg, flexShrink:0, boxShadow:'0 1px 4px rgba(26,26,24,0.1)' }}></div>
+                    <div>
+                      <div style={{ fontSize:'14px', fontStyle:'italic', fontFamily:"'Cormorant Garamond',serif", color: C.ink, lineHeight:1.3 }}>{w.title}</div>
+                      <div style={{ fontSize:'10px', fontFamily:'monospace', color: C.gray300, marginTop:'2px' }}>{w.catalog} · {w.dimensions}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style={{ padding:'14px 16px', fontSize:'12px', color: C.gray500 }}>{w.medium}</td>
+                <td style={{ padding:'14px 16px', fontSize:'14px', fontWeight:500, color: w.status==='sold' ? C.gray300 : C.gold }}>€{w.price.toLocaleString()}</td>
+                <td style={{ padding:'14px 16px' }}><StatusBadge status={w.status} /></td>
+                <td style={{ padding:'14px 16px' }}>
+                  <button onClick={() => toggleFeatured(w.id)}
+                    style={{ width:'32px', height:'18px', borderRadius:'999px', background: w.featured ? C.gold : C.gray100, border:'none', position:'relative', cursor:'pointer', transition:'background 200ms' }}>
+                    <span style={{ position:'absolute', top:'2px', left: w.featured ? '16px' : '2px', width:'14px', height:'14px', borderRadius:'999px', background:'#fff', transition:'left 200ms', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}></span>
+                  </button>
+                </td>
+                <td style={{ padding:'14px 16px' }}>
+                  <div style={{ display:'flex', gap:'6px' }}>
+                    <Btn variant="ghost" size="sm" onClick={() => onEdit(w)}>Edit</Btn>
+                    {w.status !== 'sold' && (
+                      <Btn variant="ghost" size="sm" onClick={() => toggleStatus(w.id)}>{w.status === 'hidden' ? 'Show' : 'Hide'}</Btn>
+                    )}
+                    <Btn variant="danger" size="sm" onClick={() => setConfirmDelete(w.id)}>Delete</Btn>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filtered.length === 0 && (
+          <div style={{ padding:'48px', textAlign:'center', color: C.gray300, fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontStyle:'italic' }}>No works in this category.</div>
+        )}
+      </div>
+
+      {/* Confirm delete modal */}
+      {confirmDelete && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', padding:'32px', maxWidth:'360px', width:'100%', boxShadow:'0 24px 64px rgba(26,26,24,0.2)' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:400, color: C.ink, marginBottom:'12px' }}>Delete this work?</h3>
+            <p style={{ fontSize:'13px', color: C.gray500, lineHeight:1.6, marginBottom:'24px' }}>This action cannot be undone. The artwork will be permanently removed from the gallery.</p>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <Btn variant="danger" onClick={() => deleteWork(confirmDelete)}>Delete permanently</Btn>
+              <Btn variant="ghost" onClick={() => setConfirmDelete(null)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Upload / Edit Screen ──────────────────────────────────────────────────────
+
+const UploadScreen = ({ editWork, onSave, onCancel }) => {
+  const isEdit = !!editWork;
+  const [form, setForm] = React.useState(editWork ? {
+    title: editWork.title, medium: editWork.medium, price: editWork.price,
+    dimensions: editWork.dimensions, year: editWork.year, status: editWork.status,
+    description: editWork.description || '',
+  } : { title:'', medium:'Photography', price:'', dimensions:'', year:'2024', status:'available', description:'' });
+
+  const [saved, setSaved] = React.useState(false);
+
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const submit = (e) => {
+    e.preventDefault();
+    setSaved(true);
+    setTimeout(() => { onSave(form); setSaved(false); }, 700);
+  };
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'780px' }}>
+      <div style={{ marginBottom:'28px' }}>
+        <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color: C.gray500, marginBottom:'6px' }}>{isEdit ? 'Editing work' : 'Add to collection'}</div>
+        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color: C.ink, letterSpacing:'-0.01em' }}>{isEdit ? `Edit "${editWork.title}"` : 'Upload New Work'}</h1>
+      </div>
+
+      <form onSubmit={submit}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'24px 28px' }}>
+          {/* Image upload */}
+          <div style={{ gridColumn:'1/-1' }}>
+            <Field label="Artwork Image">
+              <div style={{ border:`2px dashed ${C.gray100}`, borderRadius:'2px', background: C.gray50, padding:'40px', display:'flex', flexDirection:'column', alignItems:'center', gap:'12px', cursor:'pointer', transition:'border-color 150ms' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = C.green500}
+                onMouseLeave={e => e.currentTarget.style.borderColor = C.gray100}>
+                {isEdit ? (
+                  <div style={{ width:'80px', height:'80px', borderRadius:'1px', background: editWork.bg }}></div>
+                ) : (
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke={C.gray300} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 22V10M11 15l5-5 5 5"/><rect x="4" y="4" width="24" height="24" rx="1"/>
+                  </svg>
+                )}
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:'13px', fontWeight:500, color: C.gray700 }}>{isEdit ? 'Replace image' : 'Drop image here'}</div>
+                  <div style={{ fontSize:'11px', color: C.gray300, marginTop:'3px' }}>JPG, PNG or TIFF · Max 50MB · Min 2000px on longest side</div>
+                </div>
+                <Btn variant="ghost" size="sm">Browse Files</Btn>
+              </div>
+            </Field>
+          </div>
+
+          <Field label="Title" >
+            <Input value={form.title} onChange={set('title')} placeholder="e.g. Coastal Light, No. 4" required />
+          </Field>
+
+          <Field label="Medium">
+            <Select value={form.medium} onChange={set('medium')}>
+              <option>Photography</option>
+              <option>Painting</option>
+              <option>Print</option>
+              <option>Drawing</option>
+              <option>Digital</option>
+              <option>Mixed Media</option>
+            </Select>
+          </Field>
+
+          <Field label="Price (€)" hint="Enter the asking price in Euros. Leave blank to show 'Price on request'.">
+            <Input type="number" value={form.price} onChange={set('price')} placeholder="e.g. 1200" />
+          </Field>
+
+          <Field label="Dimensions">
+            <Input value={form.dimensions} onChange={set('dimensions')} placeholder="e.g. 60×90 cm" />
+          </Field>
+
+          <Field label="Year">
+            <Input value={form.year} onChange={set('year')} placeholder="2024" />
+          </Field>
+
+          <Field label="Visibility">
+            <Select value={form.status} onChange={set('status')}>
+              <option value="available">Available — visible to buyers</option>
+              <option value="hidden">Hidden — not visible publicly</option>
+              <option value="sold">Sold — shown as sold</option>
+            </Select>
+          </Field>
+
+          <div style={{ gridColumn:'1/-1' }}>
+            <Field label="Description" hint="Optional. A short curatorial note about this work.">
+              <textarea value={form.description} onChange={set('description')}
+                placeholder="A quiet study of light on water, taken at dawn…"
+                style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'10px 13px', fontSize:'14px', color: C.ink, outline:'none', width:'100%', minHeight:'96px', resize:'vertical', fontFamily:'Jost,sans-serif' }} />
+            </Field>
+          </div>
+        </div>
+
+        <div style={{ marginTop:'28px', display:'flex', gap:'12px', alignItems:'center' }}>
+          <Btn type="submit" variant="primary" size="lg" disabled={saved}>{saved ? 'Saving…' : (isEdit ? 'Save Changes' : 'Upload Work')}</Btn>
+          {isEdit && <Btn variant="ghost" size="lg" onClick={onCancel}>Cancel</Btn>}
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// ── Exhibitions Screen ────────────────────────────────────────────────────────
+
+const INITIAL_EXHIBITIONS = [
+  { id:1, title:'Light on Still Water',  subtitle:'Sophie Marchand — Photography', description:'A meditation on stillness and passage. Twenty photographs taken at dawn on the Atlantic coast, exploring the boundary between sky and sea.', artist:'Sophie Marchand', location:'Main Gallery, Paris', startDate:'2026-03-10', endDate:'2026-06-20', bg:'linear-gradient(160deg,#8FB8C8 0%,#4A7899 35%,#2A4D66 70%,#1A2E40 100%)', works:20 },
+  { id:2, title:'Memoria del Luogo',     subtitle:'Luca Ferretti — Painting',      description:'New large-format oils tracing the industrial periphery of Milan — its fog, its light, its lingering traces of work and abandonment.', artist:'Luca Ferretti', location:'Main Gallery, Paris', startDate:'2026-07-01', endDate:'2026-09-30', bg:'radial-gradient(ellipse at 60% 40%,#C9A84C 0%,#8B6B1A 50%,#3A2A08 100%)', works:6 },
+  { id:3, title:'Botanical Geometries',  subtitle:'Yuna Park — Print',             description:'Thirty silkscreen prints, each hand-pulled in limited editions of twelve. Park draws from historical botanical illustration.', artist:'Yuna Park', location:'Main Gallery, Paris', startDate:'2026-10-15', endDate:'2026-12-20', bg:'linear-gradient(135deg,#A8C99A 0%,#4A7C59 50%,#1A4D2E 100%)', works:30 },
+  { id:4, title:'Traces',               subtitle:'Group Exhibition',               description:'The inaugural Galley Époque group show brought together eight artists working across photography, drawing and textile.', artist:'Group Exhibition', location:'Main Gallery, Paris', startDate:'2025-09-05', endDate:'2025-12-15', bg:'radial-gradient(ellipse at 30% 60%,#2E7048 0%,#1A4D2E 40%,#0E2D1A 100%)', works:42 },
+  { id:5, title:'Evening Silence',      subtitle:'Anonymous — Painting',           description:'Five large paintings exploring the palette of dusk — the hour when objects lose their edges and colour becomes atmospheric.', artist:'Anonymous', location:'Main Gallery, Paris', startDate:'2025-04-01', endDate:'2025-07-31', bg:'linear-gradient(140deg,#3A3360 0%,#1E1A3A 40%,#0D0B1A 100%)', works:5 },
+];
+
+const getExhibitionStatus = (ex) => {
+  const today = new Date();
+  const start = new Date(ex.startDate);
+  const end   = new Date(ex.endDate);
+  if (today >= start && today <= end) return 'current';
+  if (today < start) return 'upcoming';
+  return 'past';
+};
+
+const EX_STATUS_STYLE = {
+  current:  { bg:'#EEF6E9', color:'#235E39', label:'Now Showing' },
+  upcoming: { bg:'#F5EDD0', color:'#8B6B1A', label:'Upcoming' },
+  past:     { bg:'#F2F0EC', color:'#8C8679', label:'Past' },
+};
+
+const ExhibitionStatusBadge = ({ ex }) => {
+  const status = getExhibitionStatus(ex);
+  const s = EX_STATUS_STYLE[status];
+  return <span style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', background:s.bg, color:s.color, padding:'3px 9px', borderRadius:'999px', fontFamily:'Jost,sans-serif' }}>{s.label}</span>;
+};
+
+const BG_EX_PRESETS = [
+  'linear-gradient(160deg,#8FB8C8 0%,#4A7899 35%,#1A2E40 100%)',
+  'radial-gradient(ellipse at 60% 40%,#C9A84C 0%,#8B6B1A 50%,#3A2A08 100%)',
+  'linear-gradient(135deg,#A8C99A 0%,#4A7C59 50%,#1A4D2E 100%)',
+  'radial-gradient(ellipse at 30% 60%,#2E7048 0%,#1A4D2E 40%,#0E2D1A 100%)',
+  'linear-gradient(140deg,#3A3360 0%,#1E1A3A 40%,#0D0B1A 100%)',
+  'linear-gradient(135deg,#8C4A2E 0%,#5C2E1A 50%,#2A1208 100%)',
+];
+
+const ExhibitionsScreen = ({ exhibitions, setExhibitions }) => {
+  const [editing, setEditing]       = React.useState(null);
+  const [confirmDel, setConfirmDel] = React.useState(null);
+  const [filter, setFilter]         = React.useState('all');
+  const [form, setForm]             = React.useState({ title:'', subtitle:'', description:'', artist:'', location:'Main Gallery, Paris', startDate:'', endDate:'', bg: BG_EX_PRESETS[0], works:'' });
+  const set = k => e => setForm(f => ({...f, [k]: e.target.value}));
+
+  const openNew  = () => { setForm({ title:'', subtitle:'', description:'', artist:'', location:'Main Gallery, Paris', startDate:'', endDate:'', bg: BG_EX_PRESETS[0], works:'' }); setEditing('new'); };
+  const openEdit = (ex) => { setForm({ title:ex.title, subtitle:ex.subtitle, description:ex.description, artist:ex.artist, location:ex.location, startDate:ex.startDate, endDate:ex.endDate, bg:ex.bg, works:ex.works }); setEditing(ex.id); };
+  const cancel   = () => setEditing(null);
+
+  const save = (e) => {
+    e.preventDefault();
+    if (editing === 'new') {
+      const newId = Math.max(0, ...exhibitions.map(ex=>ex.id)) + 1;
+      setExhibitions(list => [...list, { id:newId, ...form, works: Number(form.works) }]);
+    } else {
+      setExhibitions(list => list.map(ex => ex.id===editing ? { ...ex, ...form, works: Number(form.works) } : ex));
+    }
+    setEditing(null);
+  };
+
+  const del = (id) => { setExhibitions(list => list.filter(ex=>ex.id!==id)); setConfirmDel(null); };
+
+  const statusCounts = { all: exhibitions.length, current: 0, upcoming: 0, past: 0 };
+  exhibitions.forEach(ex => statusCounts[getExhibitionStatus(ex)]++);
+
+  const filtered = filter === 'all' ? exhibitions : exhibitions.filter(ex => getExhibitionStatus(ex) === filter);
+  const sorted   = [...filtered].sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
+
+  const FILTERS = [['all','All'], ['current','Now Showing'], ['upcoming','Upcoming'], ['past','Past']];
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'1060px' }}>
+      {/* Header */}
+      <div style={{ marginBottom:'28px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+        <div>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:C.gray500, marginBottom:'6px' }}>
+            {statusCounts.current} showing · {statusCounts.upcoming} upcoming · {statusCounts.past} past
+          </div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color:C.ink, letterSpacing:'-0.01em' }}>Exhibitions</h1>
+        </div>
+        <Btn variant="primary" onClick={openNew}>+ New Exhibition</Btn>
+      </div>
+
+      {/* Info */}
+      <div style={{ background:'#EEF6E9', border:`1px solid #D4E8CB`, borderRadius:'2px', padding:'14px 18px', marginBottom:'24px', display:'flex', gap:'10px', alignItems:'flex-start' }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#235E39" strokeWidth="1.5" strokeLinecap="round" style={{ flexShrink:0, marginTop:'1px' }}><circle cx="8" cy="8" r="7"/><path d="M8 7v4M8 5.5v.5"/></svg>
+        <span style={{ fontSize:'13px', color:'#235E39', lineHeight:1.5 }}>Exhibition status (Now Showing / Upcoming / Past) is calculated automatically from the start and end dates you set. The homepage and Exhibitions page both reflect this in real time — no manual status needed.</span>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display:'flex', gap:'8px', marginBottom:'20px' }}>
+        {FILTERS.map(([val, label]) => (
+          <button key={val} onClick={() => setFilter(val)}
+            style={{ fontFamily:'Jost,sans-serif', fontSize:'12px', fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase', background: filter===val ? C.green800 : 'transparent', color: filter===val ? '#fff' : C.gray500, border:`1px solid ${filter===val ? C.green800 : C.gray100}`, padding:'7px 16px', borderRadius:'2px', cursor:'pointer' }}>
+            {label} <span style={{ opacity:0.6 }}>({statusCounts[val]})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Exhibition cards */}
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        {sorted.map(ex => {
+          const status = getExhibitionStatus(ex);
+          return (
+            <div key={ex.id} style={{ background:'#fff', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', overflow:'hidden', display:'flex' }}>
+              {/* Color strip */}
+              <div style={{ width:'80px', flexShrink:0, background:ex.bg, position:'relative' }}>
+                {status === 'current' && <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:C.gold }}></div>}
+              </div>
+              {/* Info */}
+              <div style={{ flex:1, padding:'18px 24px', display:'flex', alignItems:'center', gap:'24px' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'5px' }}>
+                    <ExhibitionStatusBadge ex={ex} />
+                    <span style={{ fontSize:'11px', color:C.gray300, fontFamily:'monospace' }}>{ex.startDate} → {ex.endDate}</span>
+                  </div>
+                  <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'19px', fontStyle:'italic', color:C.ink, marginBottom:'3px' }}>{ex.title}</div>
+                  <div style={{ fontSize:'12px', color:C.gray500 }}>{ex.subtitle} · {ex.works} works · {ex.location}</div>
+                </div>
+                <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
+                  <Btn variant="ghost" size="sm" onClick={() => openEdit(ex)}>Edit</Btn>
+                  <Btn variant="danger" size="sm" onClick={() => setConfirmDel(ex.id)}>Delete</Btn>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {sorted.length === 0 && (
+          <div style={{ padding:'64px', textAlign:'center', background:'#fff', borderRadius:'2px', color:C.gray300, fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontStyle:'italic' }}>No exhibitions in this category.</div>
+        )}
+      </div>
+
+      {/* Edit / New modal */}
+      {editing !== null && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'32px' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', maxWidth:'640px', width:'100%', maxHeight:'92vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(26,26,24,0.22)' }}>
+            {/* Preview strip */}
+            <div style={{ height:'120px', background:form.bg, position:'relative', flexShrink:0 }}>
+              <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right, rgba(0,0,0,0.6) 0%, transparent 100%)' }}></div>
+              <div style={{ position:'absolute', bottom:'14px', left:'20px' }}>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontWeight:300, color:'white' }}>{form.title || 'Exhibition Title'}</div>
+                <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.5)', marginTop:'3px' }}>{form.subtitle || 'Artist — Medium'}</div>
+              </div>
+            </div>
+
+            <div style={{ padding:'28px 32px' }}>
+              <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:300, color:C.ink, marginBottom:'22px' }}>{editing==='new' ? 'New Exhibition' : 'Edit Exhibition'}</h3>
+              <form onSubmit={save} style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+                  <Field label="Title" ><Input value={form.title} onChange={set('title')} placeholder="e.g. Light on Still Water" required /></Field>
+                  <Field label="Subtitle"><Input value={form.subtitle} onChange={set('subtitle')} placeholder="e.g. Sophie Marchand — Photography" /></Field>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+                  <Field label="Artist / Group"><Input value={form.artist} onChange={set('artist')} placeholder="e.g. Sophie Marchand" /></Field>
+                  <Field label="Location"><Input value={form.location} onChange={set('location')} placeholder="e.g. Main Gallery, Paris" /></Field>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'16px' }}>
+                  <Field label="Start Date" hint="YYYY-MM-DD"><Input type="date" value={form.startDate} onChange={set('startDate')} required /></Field>
+                  <Field label="End Date"   hint="YYYY-MM-DD"><Input type="date" value={form.endDate}   onChange={set('endDate')}   required /></Field>
+                  <Field label="No. of Works"><Input type="number" value={form.works} onChange={set('works')} placeholder="e.g. 20" /></Field>
+                </div>
+                <Field label="Description">
+                  <textarea value={form.description} onChange={set('description')} placeholder="A short curatorial description…"
+                    style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'10px 13px', fontSize:'14px', color:C.ink, outline:'none', width:'100%', minHeight:'90px', resize:'vertical', fontFamily:'Jost,sans-serif' }} />
+                </Field>
+                <Field label="Cover Colour" hint="Choose a background preset for this exhibition.">
+                  <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                    {BG_EX_PRESETS.map(p => (
+                      <button key={p} type="button" onClick={() => setForm(f=>({...f, bg:p}))}
+                        style={{ width:'36px', height:'36px', borderRadius:'2px', background:p, border: form.bg===p ? `2px solid ${C.green800}` : `2px solid transparent`, cursor:'pointer' }} />
+                    ))}
+                  </div>
+                </Field>
+                <Field label="Cover Image" hint="Full-resolution image (JPG/PNG, min 2400px wide) for the exhibition hero.">
+                  <div style={{ border:`2px dashed ${C.gray100}`, borderRadius:'2px', background:C.gray50, padding:'18px', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', cursor:'pointer' }}>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={C.gray300} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 14V6M7 9l3-3 3 3"/><rect x="2" y="2" width="16" height="16" rx="1"/></svg>
+                    <span style={{ fontSize:'12px', color:C.gray300 }}>Upload cover image</span>
+                  </div>
+                </Field>
+                <div style={{ display:'flex', gap:'10px', marginTop:'4px' }}>
+                  <Btn type="submit" variant="primary">{editing==='new' ? 'Create Exhibition' : 'Save Changes'}</Btn>
+                  <Btn variant="ghost" onClick={cancel}>Cancel</Btn>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete */}
+      {confirmDel && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', padding:'32px', maxWidth:'360px', width:'100%', boxShadow:'0 24px 64px rgba(26,26,24,0.2)' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:400, color:C.ink, marginBottom:'12px' }}>Delete this exhibition?</h3>
+            <p style={{ fontSize:'13px', color:C.gray500, lineHeight:1.6, marginBottom:'24px' }}>It will be removed from the public programme immediately.</p>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <Btn variant="danger" onClick={() => del(confirmDel)}>Delete</Btn>
+              <Btn variant="ghost" onClick={() => setConfirmDel(null)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Announcements Screen ──────────────────────────────────────────────────────
+
+const INITIAL_ANNOUNCEMENTS = [
+  { id:1, title:'Spring Collection Now Open', body:'Our curated Spring 2024 collection is now available for viewing and purchase. Fifteen new works across photography, painting and print.', status:'published', pinned:true,  date:'2024-03-15' },
+  { id:2, title:'Gallery Hours — Easter Weekend', body:'We will be closed 29 March – 1 April for the Easter holiday. Enquiries received during this period will be answered on 2 April.', status:'published', pinned:false, date:'2024-03-10' },
+  { id:3, title:'New Artist: Mireille Fontaine', body:'We are delighted to welcome Mireille Fontaine to the Galley Époque roster. Her debut exhibition opens May 2024.', status:'draft',     pinned:false, date:'2024-03-08' },
+];
+
+const AnnBadge = ({ status, pinned }) => (
+  <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
+    <span style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', background: status==='published' ? '#EEF6E9' : '#FFF8E1', color: status==='published' ? '#235E39' : '#B8860B', padding:'3px 9px', borderRadius:'999px' }}>{status}</span>
+    {pinned && <span style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', background:'#F5EDD0', color:'#8B6B1A', padding:'3px 9px', borderRadius:'999px' }}>Pinned</span>}
+  </div>
+);
+
+const AnnouncementsScreen = ({ announcements, setAnnouncements }) => {
+  const [editing, setEditing]   = React.useState(null);   // null | 'new' | {id}
+  const [form, setForm]         = React.useState({ title:'', body:'', status:'published', pinned:false });
+  const [confirmDel, setConfirmDel] = React.useState(null);
+
+  const openNew  = () => { setForm({ title:'', body:'', status:'published', pinned:false }); setEditing('new'); };
+  const openEdit = (a)  => { setForm({ title:a.title, body:a.body, status:a.status, pinned:a.pinned }); setEditing(a.id); };
+  const cancel   = () => setEditing(null);
+
+  const save = (e) => {
+    e.preventDefault();
+    const today = new Date().toISOString().slice(0,10);
+    if (editing === 'new') {
+      const newId = Math.max(0, ...announcements.map(a=>a.id)) + 1;
+      setAnnouncements(list => [{ id:newId, date:today, ...form }, ...list]);
+    } else {
+      setAnnouncements(list => list.map(a => a.id===editing ? { ...a, ...form } : a));
+    }
+    setEditing(null);
+  };
+
+  const del = (id) => { setAnnouncements(list => list.filter(a=>a.id!==id)); setConfirmDel(null); };
+  const togglePin = (id) => setAnnouncements(list => list.map(a => a.id===id ? {...a, pinned:!a.pinned} : a));
+  const toggleStatus = (id) => setAnnouncements(list => list.map(a => a.id===id ? {...a, status: a.status==='published'?'draft':'published'} : a));
+  const set = k => e => setForm(f => ({...f, [k]: e.target ? e.target.value : e}));
+
+  const sorted = [...announcements].sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0));
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'900px' }}>
+      <div style={{ marginBottom:'28px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+        <div>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:C.gray500, marginBottom:'6px' }}>{announcements.length} notices</div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color:C.ink, letterSpacing:'-0.01em' }}>Announcements</h1>
+        </div>
+        <Btn variant="primary" onClick={openNew}>+ New Announcement</Btn>
+      </div>
+
+      {/* List */}
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        {sorted.map(a => (
+          <div key={a.id} style={{ background:'#fff', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', border: a.pinned ? `1px solid ${C.gold}` : `1px solid ${C.gray100}`, padding:'20px 24px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'16px' }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
+                  <AnnBadge status={a.status} pinned={a.pinned} />
+                  <span style={{ fontSize:'11px', color:C.gray300, fontFamily:'monospace' }}>{a.date}</span>
+                </div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontWeight:400, color:C.ink, marginBottom:'6px' }}>{a.title}</div>
+                <p style={{ fontSize:'13px', color:C.gray500, lineHeight:1.65 }}>{a.body}</p>
+              </div>
+              <div style={{ display:'flex', gap:'6px', flexShrink:0, marginTop:'2px' }}>
+                <Btn variant="ghost" size="sm" onClick={() => togglePin(a.id)}>{a.pinned ? 'Unpin' : 'Pin'}</Btn>
+                <Btn variant="ghost" size="sm" onClick={() => toggleStatus(a.id)}>{a.status==='published' ? 'Unpublish' : 'Publish'}</Btn>
+                <Btn variant="ghost" size="sm" onClick={() => openEdit(a)}>Edit</Btn>
+                <Btn variant="danger" size="sm" onClick={() => setConfirmDel(a.id)}>Delete</Btn>
+              </div>
+            </div>
+          </div>
+        ))}
+        {sorted.length === 0 && (
+          <div style={{ padding:'64px', textAlign:'center', background:'#fff', borderRadius:'2px', color:C.gray300, fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontStyle:'italic' }}>No announcements yet.</div>
+        )}
+      </div>
+
+      {/* Edit / New modal */}
+      {editing !== null && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'32px' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', maxWidth:'560px', width:'100%', padding:'36px', boxShadow:'0 24px 64px rgba(26,26,24,0.22)' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'24px', fontWeight:300, color:C.ink, marginBottom:'24px' }}>{editing==='new' ? 'New Announcement' : 'Edit Announcement'}</h3>
+            <form onSubmit={save} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+              <Field label="Title"><Input value={form.title} onChange={set('title')} placeholder="e.g. Spring Collection Now Open" required /></Field>
+              <Field label="Body">
+                <textarea value={form.body} onChange={set('body')} required placeholder="Write your announcement…"
+                  style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'10px 13px', fontSize:'14px', color:C.ink, outline:'none', width:'100%', minHeight:'120px', resize:'vertical', fontFamily:'Jost,sans-serif' }} />
+              </Field>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+                <Field label="Status">
+                  <Select value={form.status} onChange={set('status')}>
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                  </Select>
+                </Field>
+                <Field label="Pin to top">
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px', paddingTop:'8px' }}>
+                    <button type="button" onClick={() => setForm(f=>({...f, pinned:!f.pinned}))}
+                      style={{ width:'36px', height:'20px', borderRadius:'999px', background:form.pinned?C.gold:C.gray100, border:'none', position:'relative', cursor:'pointer', transition:'background 200ms' }}>
+                      <span style={{ position:'absolute', top:'3px', left:form.pinned?'18px':'3px', width:'14px', height:'14px', borderRadius:'999px', background:'#fff', transition:'left 200ms', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}></span>
+                    </button>
+                    <span style={{ fontSize:'13px', color:C.gray500 }}>{form.pinned ? 'Pinned' : 'Not pinned'}</span>
+                  </div>
+                </Field>
+              </div>
+              <div style={{ display:'flex', gap:'10px', marginTop:'4px' }}>
+                <Btn type="submit" variant="primary">{editing==='new' ? 'Publish' : 'Save Changes'}</Btn>
+                <Btn variant="ghost" onClick={cancel}>Cancel</Btn>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete */}
+      {confirmDel && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', padding:'32px', maxWidth:'360px', width:'100%', boxShadow:'0 24px 64px rgba(26,26,24,0.2)' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:400, color:C.ink, marginBottom:'12px' }}>Delete announcement?</h3>
+            <p style={{ fontSize:'13px', color:C.gray500, lineHeight:1.6, marginBottom:'24px' }}>This cannot be undone.</p>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <Btn variant="danger" onClick={() => del(confirmDel)}>Delete</Btn>
+              <Btn variant="ghost" onClick={() => setConfirmDel(null)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Artists Screen ────────────────────────────────────────────────────────────
+
+const INITIAL_ARTISTS = [
+  { id:1, name:'Sophie Marchand',  nationality:'French',   medium:'Photography',    bio:'Sophie works with natural light and long exposures to capture transient moments in coastal France.', works:4, bg:'linear-gradient(135deg,#4A7C59,#1A4D2E)', active:true  },
+  { id:2, name:'Luca Ferretti',    nationality:'Italian',  medium:'Painting',       bio:"Luca's large-format oil paintings explore the interplay between memory and place in post-industrial Milan.", works:3, bg:'linear-gradient(160deg,#C9A84C,#8B6B1A)', active:true  },
+  { id:3, name:'Yuna Park',        nationality:'Korean',   medium:'Print',          bio:'Yuna creates layered silkscreen prints drawing from botanical illustration and contemporary pattern.', works:2, bg:'linear-gradient(135deg,#A8C99A,#4A7C59)', active:true  },
+  { id:4, name:'Mireille Fontaine',nationality:'Belgian',  medium:'Mixed Media',    bio:'Debut artist joining the Galley Époque roster in 2024. Exhibition opens May.', works:0, bg:'linear-gradient(135deg,#8C8679,#3A3A37)', active:false },
+];
+
+const ArtistsScreen = ({ artists, setArtists }) => {
+  const [editing, setEditing]     = React.useState(null);
+  const [form, setForm]           = React.useState({ name:'', nationality:'', medium:'Photography', bio:'', active:true });
+  const [confirmDel, setConfirmDel] = React.useState(null);
+
+  const openNew  = () => { setForm({ name:'', nationality:'', medium:'Photography', bio:'', active:true }); setEditing('new'); };
+  const openEdit = (a) => { setForm({ name:a.name, nationality:a.nationality, medium:a.medium, bio:a.bio, active:a.active }); setEditing(a.id); };
+  const cancel   = () => setEditing(null);
+  const set      = k => e => setForm(f => ({...f, [k]: e.target ? e.target.value : e}));
+
+  const save = (e) => {
+    e.preventDefault();
+    if (editing === 'new') {
+      const newId = Math.max(0, ...artists.map(a=>a.id)) + 1;
+      const bgs = ['linear-gradient(135deg,#6A9E78,#235E39)','linear-gradient(160deg,#E2C97A,#C9A84C)','linear-gradient(135deg,#5C5750,#1A1A18)'];
+      setArtists(list => [...list, { id:newId, works:0, bg: bgs[newId % bgs.length], ...form }]);
+    } else {
+      setArtists(list => list.map(a => a.id===editing ? { ...a, ...form } : a));
+    }
+    setEditing(null);
+  };
+
+  const del = (id) => { setArtists(list => list.filter(a=>a.id!==id)); setConfirmDel(null); };
+  const toggleActive = (id) => setArtists(list => list.map(a => a.id===id ? {...a, active:!a.active} : a));
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'1000px' }}>
+      <div style={{ marginBottom:'28px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+        <div>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:C.gray500, marginBottom:'6px' }}>{artists.length} artists</div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color:C.ink, letterSpacing:'-0.01em' }}>Artists</h1>
+        </div>
+        <Btn variant="primary" onClick={openNew}>+ Add Artist</Btn>
+      </div>
+
+      {/* Grid */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'16px' }}>
+        {artists.map(a => (
+          <div key={a.id} style={{ background:'#fff', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', overflow:'hidden', opacity: a.active ? 1 : 0.6, border:`1px solid ${C.gray100}` }}>
+            <div style={{ display:'flex', gap:'0' }}>
+              {/* Avatar strip */}
+              <div style={{ width:'80px', flexShrink:0, background:a.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'28px', fontWeight:300, color:'rgba(255,255,255,0.85)' }}>{a.name.charAt(0)}</span>
+              </div>
+              {/* Info */}
+              <div style={{ flex:1, padding:'18px 20px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6px' }}>
+                  <div>
+                    <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontWeight:400, color:C.ink, lineHeight:1.2 }}>{a.name}</div>
+                    <div style={{ fontSize:'11px', color:C.gray300, letterSpacing:'0.04em', marginTop:'2px' }}>{a.nationality} · {a.medium} · {a.works} work{a.works!==1?'s':''}</div>
+                  </div>
+                  <span style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', background: a.active?C.green50:'#F2F0EC', color: a.active?C.green700:C.gray500, padding:'3px 9px', borderRadius:'999px', flexShrink:0 }}>{a.active?'Active':'Inactive'}</span>
+                </div>
+                <p style={{ fontSize:'12px', color:C.gray500, lineHeight:1.6, marginBottom:'14px' }}>{a.bio}</p>
+                <div style={{ display:'flex', gap:'6px' }}>
+                  <Btn variant="ghost" size="sm" onClick={() => openEdit(a)}>Edit</Btn>
+                  <Btn variant="ghost" size="sm" onClick={() => toggleActive(a.id)}>{a.active ? 'Deactivate' : 'Activate'}</Btn>
+                  <Btn variant="danger" size="sm" onClick={() => setConfirmDel(a.id)}>Remove</Btn>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Edit / New modal */}
+      {editing !== null && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'32px' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', maxWidth:'520px', width:'100%', padding:'36px', boxShadow:'0 24px 64px rgba(26,26,24,0.22)', maxHeight:'90vh', overflowY:'auto' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'24px', fontWeight:300, color:C.ink, marginBottom:'24px' }}>{editing==='new' ? 'Add Artist' : 'Edit Artist'}</h3>
+            <form onSubmit={save} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+                <Field label="Full Name"><Input value={form.name} onChange={set('name')} placeholder="e.g. Sophie Marchand" required /></Field>
+                <Field label="Nationality"><Input value={form.nationality} onChange={set('nationality')} placeholder="e.g. French" /></Field>
+              </div>
+              <Field label="Primary Medium">
+                <Select value={form.medium} onChange={set('medium')}>
+                  {['Photography','Painting','Print','Drawing','Digital','Mixed Media','Sculpture'].map(m=><option key={m}>{m}</option>)}
+                </Select>
+              </Field>
+              <Field label="Biography" hint="Shown on the public Artists page.">
+                <textarea value={form.bio} onChange={set('bio')} placeholder="A short artist statement or curatorial note…"
+                  style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'10px 13px', fontSize:'14px', color:C.ink, outline:'none', width:'100%', minHeight:'100px', resize:'vertical', fontFamily:'Jost,sans-serif' }} />
+              </Field>
+              <Field label="Profile Image" hint="Portrait or studio photograph recommended.">
+                <div style={{ border:`2px dashed ${C.gray100}`, borderRadius:'2px', background:C.gray50, padding:'24px', display:'flex', alignItems:'center', justifyContent:'center', gap:'12px', cursor:'pointer' }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={C.gray300} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 14V6M7 9l3-3 3 3"/><rect x="2" y="2" width="16" height="16" rx="1"/></svg>
+                  <span style={{ fontSize:'12px', color:C.gray300 }}>Upload portrait image</span>
+                </div>
+              </Field>
+              <Field label="Visibility">
+                <div style={{ display:'flex', alignItems:'center', gap:'10px', paddingTop:'4px' }}>
+                  <button type="button" onClick={() => setForm(f=>({...f, active:!f.active}))}
+                    style={{ width:'36px', height:'20px', borderRadius:'999px', background:form.active?C.green800:C.gray100, border:'none', position:'relative', cursor:'pointer', transition:'background 200ms' }}>
+                    <span style={{ position:'absolute', top:'3px', left:form.active?'18px':'3px', width:'14px', height:'14px', borderRadius:'999px', background:'#fff', transition:'left 200ms', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}></span>
+                  </button>
+                  <span style={{ fontSize:'13px', color:C.gray500 }}>{form.active ? 'Active — visible on website' : 'Inactive — hidden from public'}</span>
+                </div>
+              </Field>
+              <div style={{ display:'flex', gap:'10px', marginTop:'4px' }}>
+                <Btn type="submit" variant="primary">{editing==='new' ? 'Add Artist' : 'Save Changes'}</Btn>
+                <Btn variant="ghost" onClick={cancel}>Cancel</Btn>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete */}
+      {confirmDel && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', padding:'32px', maxWidth:'360px', width:'100%', boxShadow:'0 24px 64px rgba(26,26,24,0.2)' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:400, color:C.ink, marginBottom:'12px' }}>Remove this artist?</h3>
+            <p style={{ fontSize:'13px', color:C.gray500, lineHeight:1.6, marginBottom:'24px' }}>Their profile will be removed from the gallery. Their uploaded works will remain.</p>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <Btn variant="danger" onClick={() => del(confirmDel)}>Remove</Btn>
+              <Btn variant="ghost" onClick={() => setConfirmDel(null)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Hero Slideshow Screen ─────────────────────────────────────────────────────
+
+const INITIAL_SLIDES = [
+  { id:1, title:'The Art of Seeing',   subtitle:'Spring Collection · 2024',       lead:'Original works, curated with intention.', bg:'radial-gradient(ellipse at 30% 60%, #2E7048 0%, #1A4D2E 40%, #0E2D1A 100%)', active:true,  order:1 },
+  { id:2, title:'Golden Hour',         subtitle:'Featured Work · Luca Ferretti',  lead:'Painting light as it falls across memory.', bg:'radial-gradient(ellipse at 60% 40%, #C9A84C 0%, #8B6B1A 50%, #3A2A08 100%)', active:true,  order:2 },
+  { id:3, title:'Coastal Light',       subtitle:'Photography · Sophie Marchand',  lead:'A moment held still in silver and salt.', bg:'linear-gradient(160deg, #8FB8C8 0%, #4A7899 35%, #2A4D66 70%, #1A2E40 100%)', active:true,  order:3 },
+  { id:4, title:'Forest Floor Study',  subtitle:'Print · Yuna Park',              lead:'Pattern emerging from the natural world.', bg:'radial-gradient(ellipse at 40% 70%, #3D6B43 0%, #1A4D2E 45%, #0A1F0F 100%)', active:true,  order:4 },
+  { id:5, title:'Evening Silence',     subtitle:'Painting · 2023',                lead:'The hour when light stops and colour begins.', bg:'linear-gradient(140deg, #3A3360 0%, #1E1A3A 40%, #0D0B1A 100%)', active:false, order:5 },
+];
+
+const BG_PRESETS = [
+  { label:'Forest Green',  value:'radial-gradient(ellipse at 30% 60%, #2E7048 0%, #1A4D2E 40%, #0E2D1A 100%)' },
+  { label:'Golden Hour',   value:'radial-gradient(ellipse at 60% 40%, #C9A84C 0%, #8B6B1A 50%, #3A2A08 100%)' },
+  { label:'Ocean Blue',    value:'linear-gradient(160deg, #8FB8C8 0%, #4A7899 35%, #2A4D66 70%, #1A2E40 100%)' },
+  { label:'Deep Forest',   value:'radial-gradient(ellipse at 40% 70%, #3D6B43 0%, #1A4D2E 45%, #0A1F0F 100%)' },
+  { label:'Midnight',      value:'linear-gradient(140deg, #3A3360 0%, #1E1A3A 40%, #0D0B1A 100%)' },
+  { label:'Warm Dusk',     value:'linear-gradient(135deg, #8C4A2E 0%, #5C2E1A 50%, #2A1208 100%)' },
+];
+
+const SlidePreview = ({ slide, small }) => (
+  <div style={{ position:'relative', borderRadius:'2px', overflow:'hidden', width: small ? '80px' : '100%', height: small ? '50px' : '160px', background: slide.bg, flexShrink:0 }}>
+    <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right, rgba(0,0,0,0.55) 0%, transparent 100%)' }}></div>
+    {!small && (
+      <div style={{ position:'absolute', bottom:'14px', left:'16px', right:'16px' }}>
+        <div style={{ fontSize:'9px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'#C9A84C', marginBottom:'4px' }}>{slide.subtitle}</div>
+        <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'16px', fontWeight:300, color:'white', lineHeight:1.1 }}>{slide.title}</div>
+      </div>
+    )}
+  </div>
+);
+
+const SlideshowScreen = ({ slides, setSlides }) => {
+  const [editing, setEditing]     = React.useState(null);
+  const [form, setForm]           = React.useState({ title:'', subtitle:'', lead:'', bg: BG_PRESETS[0].value, active:true });
+  const [confirmDel, setConfirmDel] = React.useState(null);
+  const [preview, setPreview]     = React.useState(null);
+
+  const active = slides.filter(s => s.active).length;
+  const ordered = [...slides].sort((a,b) => a.order - b.order);
+
+  const openNew  = () => { setForm({ title:'', subtitle:'', lead:'', bg: BG_PRESETS[0].value, active:true }); setEditing('new'); };
+  const openEdit = (s) => { setForm({ title:s.title, subtitle:s.subtitle, lead:s.lead, bg:s.bg, active:s.active }); setEditing(s.id); };
+  const cancel   = () => setEditing(null);
+  const set      = k => e => setForm(f => ({...f, [k]: e.target ? e.target.value : e}));
+
+  const save = (e) => {
+    e.preventDefault();
+    if (editing === 'new') {
+      const newId = Math.max(0, ...slides.map(s=>s.id)) + 1;
+      const newOrder = Math.max(0, ...slides.map(s=>s.order)) + 1;
+      setSlides(list => [...list, { id:newId, order:newOrder, ...form }]);
+    } else {
+      setSlides(list => list.map(s => s.id===editing ? { ...s, ...form } : s));
+    }
+    setEditing(null);
+  };
+
+  const del = (id) => { setSlides(list => list.filter(s=>s.id!==id)); setConfirmDel(null); };
+  const toggleActive = (id) => setSlides(list => list.map(s => s.id===id ? {...s, active:!s.active} : s));
+
+  const moveUp = (id) => {
+    const sorted = [...slides].sort((a,b) => a.order-b.order);
+    const idx = sorted.findIndex(s=>s.id===id);
+    if (idx <= 0) return;
+    setSlides(list => list.map(s => {
+      if (s.id === sorted[idx].id)   return { ...s, order: sorted[idx-1].order };
+      if (s.id === sorted[idx-1].id) return { ...s, order: sorted[idx].order };
+      return s;
+    }));
+  };
+  const moveDown = (id) => {
+    const sorted = [...slides].sort((a,b) => a.order-b.order);
+    const idx = sorted.findIndex(s=>s.id===id);
+    if (idx >= sorted.length-1) return;
+    setSlides(list => list.map(s => {
+      if (s.id === sorted[idx].id)   return { ...s, order: sorted[idx+1].order };
+      if (s.id === sorted[idx+1].id) return { ...s, order: sorted[idx].order };
+      return s;
+    }));
+  };
+
+  return (
+    <div style={{ padding:'40px', maxWidth:'960px' }}>
+      {/* Header */}
+      <div style={{ marginBottom:'28px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+        <div>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:C.gray500, marginBottom:'6px' }}>{active} active · {slides.length} total</div>
+          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'36px', fontWeight:300, color:C.ink, letterSpacing:'-0.01em' }}>Hero Slideshow</h1>
+        </div>
+        <Btn variant="primary" onClick={openNew}>+ Add Slide</Btn>
+      </div>
+
+      {/* Info banner */}
+      <div style={{ background:'#EEF6E9', border:`1px solid #D4E8CB`, borderRadius:'2px', padding:'14px 18px', marginBottom:'24px', display:'flex', gap:'10px', alignItems:'center' }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#235E39" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="7"/><path d="M8 7v4M8 5.5v.5"/></svg>
+        <span style={{ fontSize:'13px', color:'#235E39' }}>Slides cycle automatically every 5.5 seconds on the homepage. Drag the order arrows to reorder. Only active slides are shown.</span>
+      </div>
+
+      {/* Live mini-preview */}
+      {ordered.filter(s=>s.active).length > 0 && (
+        <div style={{ marginBottom:'28px' }}>
+          <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:C.gray500, marginBottom:'10px' }}>Active Slide Preview</div>
+          <div style={{ display:'flex', gap:'8px', overflow:'hidden' }}>
+            {ordered.filter(s=>s.active).map(s => (
+              <div key={s.id} style={{ flex:1, minWidth:0 }}>
+                <SlidePreview slide={s} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Slide list */}
+      <div style={{ background:'#fff', borderRadius:'2px', boxShadow:'0 2px 8px rgba(26,26,24,0.06)', overflow:'hidden' }}>
+        {ordered.map((s, i) => (
+          <div key={s.id} style={{ display:'flex', alignItems:'center', gap:'16px', padding:'16px 20px', borderBottom: i < ordered.length-1 ? `1px solid ${C.gray100}` : 'none', opacity: s.active ? 1 : 0.55 }}>
+            {/* Order controls */}
+            <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+              <button onClick={() => moveUp(s.id)} style={{ background:'transparent', border:'none', color:C.gray300, cursor:'pointer', fontSize:'14px', lineHeight:1, padding:'2px' }}>▲</button>
+              <button onClick={() => moveDown(s.id)} style={{ background:'transparent', border:'none', color:C.gray300, cursor:'pointer', fontSize:'14px', lineHeight:1, padding:'2px' }}>▼</button>
+            </div>
+
+            {/* Mini preview */}
+            <SlidePreview slide={s} small />
+
+            {/* Info */}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
+                <span style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'17px', color:C.ink, fontStyle:'italic' }}>{s.title}</span>
+                <span style={{ fontSize:'10px', fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', background: s.active?C.green50:'#F2F0EC', color: s.active?C.green700:C.gray500, padding:'2px 8px', borderRadius:'999px' }}>{s.active ? 'Active' : 'Hidden'}</span>
+              </div>
+              <div style={{ fontSize:'11px', color:C.gray300, letterSpacing:'0.04em' }}>{s.subtitle}</div>
+              <div style={{ fontSize:'12px', color:C.gray500, fontStyle:'italic', marginTop:'2px' }}>{s.lead}</div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
+              <Btn variant="ghost" size="sm" onClick={() => toggleActive(s.id)}>{s.active ? 'Hide' : 'Show'}</Btn>
+              <Btn variant="ghost" size="sm" onClick={() => openEdit(s)}>Edit</Btn>
+              <Btn variant="danger" size="sm" onClick={() => setConfirmDel(s.id)}>Delete</Btn>
+            </div>
+          </div>
+        ))}
+        {slides.length === 0 && (
+          <div style={{ padding:'64px', textAlign:'center', color:C.gray300, fontFamily:"'Cormorant Garamond',serif", fontSize:'20px', fontStyle:'italic' }}>No slides yet. Add one to get started.</div>
+        )}
+      </div>
+
+      {/* Edit / New modal */}
+      {editing !== null && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'32px' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', maxWidth:'580px', width:'100%', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 64px rgba(26,26,24,0.22)' }}>
+            {/* Preview strip */}
+            <div style={{ height:'140px', background: form.bg, position:'relative', flexShrink:0 }}>
+              <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right, rgba(0,0,0,0.6) 0%, transparent 100%)' }}></div>
+              <div style={{ position:'absolute', bottom:'16px', left:'20px' }}>
+                <div style={{ fontSize:'9px', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', color:'#C9A84C', marginBottom:'4px' }}>{form.subtitle || 'Subtitle'}</div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:300, color:'white' }}>{form.title || 'Slide Title'}</div>
+                <div style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'13px', fontStyle:'italic', color:'rgba(255,255,255,0.6)', marginTop:'3px' }}>{form.lead || 'Lead copy…'}</div>
+              </div>
+            </div>
+
+            <div style={{ padding:'28px 32px' }}>
+              <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:300, color:C.ink, marginBottom:'20px' }}>{editing==='new' ? 'New Slide' : 'Edit Slide'}</h3>
+              <form onSubmit={save} style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+                <Field label="Headline Title"><Input value={form.title} onChange={set('title')} placeholder="e.g. The Art of Seeing" required /></Field>
+                <Field label="Subtitle / Collection Label"><Input value={form.subtitle} onChange={set('subtitle')} placeholder="e.g. Spring Collection · 2024" /></Field>
+                <Field label="Lead Copy"><Input value={form.lead} onChange={set('lead')} placeholder="e.g. Original works, curated with intention." /></Field>
+
+                <Field label="Background" hint="Choose a colour preset or paste a custom CSS gradient.">
+                  <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
+                    {BG_PRESETS.map(p => (
+                      <button key={p.label} type="button" onClick={() => setForm(f=>({...f, bg:p.value}))}
+                        style={{ width:'36px', height:'36px', borderRadius:'2px', background:p.value, border: form.bg===p.value ? `2px solid ${C.green800}` : `2px solid transparent`, cursor:'pointer', outline:'none', flexShrink:0 }}
+                        title={p.label} />
+                    ))}
+                  </div>
+                  <input value={form.bg} onChange={set('bg')} placeholder="CSS gradient…"
+                    style={{ background:'#fff', border:`1px solid ${C.gray100}`, borderRadius:'2px', padding:'8px 12px', fontSize:'12px', color:C.gray700, outline:'none', width:'100%', fontFamily:'monospace' }} />
+                </Field>
+
+                <Field label="Image Upload" hint="Upload a full-resolution photograph (JPG/PNG, min 2000px wide). This replaces the colour background.">
+                  <div style={{ border:`2px dashed ${C.gray100}`, borderRadius:'2px', background:C.gray50, padding:'20px', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', cursor:'pointer' }}>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={C.gray300} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M10 14V6M7 9l3-3 3 3"/><rect x="2" y="2" width="16" height="16" rx="1"/></svg>
+                    <span style={{ fontSize:'12px', color:C.gray300 }}>Drop image or browse</span>
+                  </div>
+                </Field>
+
+                <Field label="Visibility">
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px', paddingTop:'4px' }}>
+                    <button type="button" onClick={() => setForm(f=>({...f, active:!f.active}))}
+                      style={{ width:'36px', height:'20px', borderRadius:'999px', background:form.active?C.green800:C.gray100, border:'none', position:'relative', cursor:'pointer', transition:'background 200ms' }}>
+                      <span style={{ position:'absolute', top:'3px', left:form.active?'18px':'3px', width:'14px', height:'14px', borderRadius:'999px', background:'#fff', transition:'left 200ms', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}></span>
+                    </button>
+                    <span style={{ fontSize:'13px', color:C.gray500 }}>{form.active ? 'Active — shown on homepage' : 'Hidden — not shown'}</span>
+                  </div>
+                </Field>
+
+                <div style={{ display:'flex', gap:'10px', marginTop:'4px' }}>
+                  <Btn type="submit" variant="primary">{editing==='new' ? 'Add Slide' : 'Save Changes'}</Btn>
+                  <Btn variant="ghost" onClick={cancel}>Cancel</Btn>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete */}
+      {confirmDel && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,26,24,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:'2px', padding:'32px', maxWidth:'360px', width:'100%', boxShadow:'0 24px 64px rgba(26,26,24,0.2)' }}>
+            <h3 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:'22px', fontWeight:400, color:C.ink, marginBottom:'12px' }}>Delete this slide?</h3>
+            <p style={{ fontSize:'13px', color:C.gray500, lineHeight:1.6, marginBottom:'24px' }}>This will remove it from the homepage slideshow.</p>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <Btn variant="danger" onClick={() => del(confirmDel)}>Delete</Btn>
+              <Btn variant="ghost" onClick={() => setConfirmDel(null)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── App Shell ─────────────────────────────────────────────────────────────────
+
+const App = () => {
+  const [loggedIn, setLoggedIn]           = React.useState(false);
+  const [screen, setScreen]               = React.useState('overview');
+  const [works, setWorks]                 = React.useState(INITIAL_WORKS);
+  const [editWork, setEditWork]           = React.useState(null);
+  const [announcements, setAnnouncements] = React.useState(INITIAL_ANNOUNCEMENTS);
+  const [artists, setArtists]             = React.useState(INITIAL_ARTISTS);
+  const [slides, setSlides]               = React.useState(INITIAL_SLIDES);
+  const [exhibitions, setExhibitions]     = React.useState(INITIAL_EXHIBITIONS);
+
+  const handleEdit = (work) => { setEditWork(work); setScreen('upload'); };
+  const handleSave = (form) => {
+    if (editWork) {
+      setWorks(ws => ws.map(w => w.id === editWork.id ? { ...w, ...form, price: Number(form.price) } : w));
+      setEditWork(null);
+    } else {
+      const newId = Math.max(...works.map(w => w.id)) + 1;
+      setWorks(ws => [...ws, { id: newId, catalog: `GE-2024-00${50+newId}`, bg:'linear-gradient(135deg,#7FB069,#1A4D2E)', views:0, enquiries:0, featured:false, ...form, price: Number(form.price) }]);
+    }
+    setScreen('works');
+  };
+
+  if (!loggedIn) return <LoginScreen onLogin={() => setLoggedIn(true)} />;
+
+  return (
+    <div style={{ display:'flex', minHeight:'100vh' }}>
+      <Sidebar screen={screen} onNavigate={(s) => { setEditWork(null); setScreen(s); }} onLogout={() => setLoggedIn(false)} />
+      <main style={{ flex:1, background: C.gray50, overflowY:'auto', minHeight:'100vh' }}>
+        {screen === 'overview'      && <OverviewScreen works={works} onNavigate={setScreen} />}
+        {screen === 'works'         && <ManageWorksScreen works={works} setWorks={setWorks} onEdit={handleEdit} />}
+        {screen === 'upload'        && <UploadScreen editWork={editWork} onSave={handleSave} onCancel={() => { setEditWork(null); setScreen('works'); }} />}
+        {screen === 'exhibitions'   && <ExhibitionsScreen exhibitions={exhibitions} setExhibitions={setExhibitions} />}
+        {screen === 'announcements' && <AnnouncementsScreen announcements={announcements} setAnnouncements={setAnnouncements} />}
+        {screen === 'artists'       && <ArtistsScreen artists={artists} setArtists={setArtists} />}
+        {screen === 'slideshow'     && <SlideshowScreen slides={slides} setSlides={setSlides} />}
+      </main>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
