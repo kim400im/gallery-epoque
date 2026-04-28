@@ -75,10 +75,12 @@ function SortableImageRow({
   item,
   onRemove,
   onDescriptionChange,
+  onReplace,
 }: {
   item: ImageItem
   onRemove: (id: string) => void
   onDescriptionChange: (id: string, description: string) => void
+  onReplace: (id: string, file: File) => void
 }) {
   const {
     attributes,
@@ -88,6 +90,7 @@ function SortableImageRow({
     transition,
     isDragging,
   } = useSortable({ id: item.id })
+  const replaceInputRef = useRef<HTMLInputElement>(null)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -116,6 +119,24 @@ function SortableImageRow({
           alt=""
           className="w-full h-full object-cover rounded-lg"
         />
+        <input
+          ref={replaceInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) onReplace(item.id, file)
+            e.target.value = ''
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => replaceInputRef.current?.click()}
+          className="absolute bottom-1 right-1 bg-[#7c8d4c] text-white px-1.5 py-0.5 rounded text-xs hover:bg-[#6a7a40] transition-colors"
+        >
+          변경
+        </button>
       </div>
       <input
         type="text"
@@ -247,6 +268,28 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
         item.id === itemId ? { ...item, description: newDescription } : item
       )
     )
+  }, [])
+
+  const replaceImageItem = useCallback((itemId: string, file: File) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImageItems((prev) =>
+        prev.map((item) => {
+          if (item.id !== itemId) return item
+          if (item.type === 'existing' && item.existingId) {
+            setDeleteImageIds((ids) => [...ids, item.existingId!])
+          }
+          return {
+            ...item,
+            type: 'new' as const,
+            previewUrl: reader.result as string,
+            file,
+            existingId: undefined,
+          }
+        })
+      )
+    }
+    reader.readAsDataURL(file)
   }, [])
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -593,6 +636,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
                         item={item}
                         onRemove={removeImageItem}
                         onDescriptionChange={updateImageDescription}
+                        onReplace={replaceImageItem}
                       />
                     ))}
                   </div>
