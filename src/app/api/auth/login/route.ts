@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set(PB_AUTH_COOKIE, auth.token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.SECURE_COOKIE !== 'false' && process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
     })
