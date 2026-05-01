@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  console.log('[login] success, setting cookie, secure:', process.env.SECURE_COOKIE !== 'false' && process.env.NODE_ENV === 'production')
   const response = NextResponse.json({ email: auth.record.email || email })
   response.cookies.set(PB_AUTH_COOKIE, auth.token, {
     httpOnly: true,
