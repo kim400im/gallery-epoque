@@ -67,10 +67,17 @@ export async function getServerSuperuserToken() {
 }
 
 export async function pbAuthRefresh(token: string) {
-  return pbRequest<{ token: string; record: { email?: string } }>('/api/collections/_superusers/auth-refresh', {
-    method: 'POST',
-    token,
-  })
+  try {
+    return await pbRequest<{ token: string; record: { email?: string } }>('/api/collections/_superusers/auth-refresh', {
+      method: 'POST',
+      token,
+    })
+  } catch {
+    return pbRequest<{ token: string; record: { email?: string } }>('/api/collections/users/auth-refresh', {
+      method: 'POST',
+      token,
+    })
+  }
 }
 
 export type PBRecord = Record<string, any> & {
