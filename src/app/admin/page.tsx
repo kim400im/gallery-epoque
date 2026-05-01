@@ -12,12 +12,13 @@ export default async function AdminPage() {
     redirect('/login')
   }
 
-  try {
-    const auth = await pbAuthRefresh(token)
-    console.log('[admin] auth refresh success:', auth.record.email)
-    return <AdminDashboard userEmail={auth.record.email || ''} />
-  } catch (e) {
+  const auth = await pbAuthRefresh(token).catch((e) => {
     console.log('[admin] auth refresh failed:', e)
-    redirect('/login')
-  }
+    return null
+  })
+
+  if (!auth) redirect('/login')
+
+  console.log('[admin] auth refresh success:', auth.record.email)
+  return <AdminDashboard userEmail={auth.record.email || ''} />
 }

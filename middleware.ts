@@ -10,37 +10,11 @@ export async function middleware(request: NextRequest) {
 
   // /admin 경로 인증 체크
   if (pathname.startsWith('/admin')) {
-    const response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      const loginUrl = new URL('/login', request.url);
-      return NextResponse.redirect(loginUrl);
+    const token = request.cookies.get('pb_auth')?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-
-    return response;
+    return NextResponse.next();
   }
 
   // /login, /api 경로는 그대로 통과

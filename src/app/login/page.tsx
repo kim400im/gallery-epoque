@@ -1,14 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +27,7 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/admin')
+    window.location.assign('/admin')
   }
 
   return (
@@ -88,9 +87,9 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-8 text-center">
-          <a href="/" className="text-[#7c8d4c] text-sm hover:text-[#d4af37] transition-colors">
+          <Link href="/" className="text-[#7c8d4c] text-sm hover:text-[#d4af37] transition-colors">
             홈으로 돌아가기
-          </a>
+          </Link>
         </div>
       </div>
     </div>
