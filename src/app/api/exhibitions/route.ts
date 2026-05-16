@@ -9,6 +9,10 @@ import {
   getExhibitions,
 } from '@/lib/pocketbase-data'
 
+function toYmdString(value: string | null | undefined) {
+  return value?.match(/\d{4}-\d{2}-\d{2}/)?.[0] || ''
+}
+
 export async function GET() {
   try {
     return NextResponse.json(await getExhibitions())
@@ -85,7 +89,10 @@ export async function PUT(request: NextRequest) {
       newImageStartOrder?: number
     }
 
-    if (!body.id || !body.title || !body.startDate || !body.endDate) {
+    const startDate = toYmdString(body.startDate)
+    const endDate = toYmdString(body.endDate)
+
+    if (!body.id || !body.title || !startDate || !endDate) {
       return NextResponse.json({ error: 'ID, title, and dates are required' }, { status: 400 })
     }
 
@@ -98,12 +105,12 @@ export async function PUT(request: NextRequest) {
     })
 
     const currentExhibition = await getExhibition(body.id)
-    const currentStartDate = currentExhibition.startDate?.slice(0, 10) || ''
-    const currentEndDate = currentExhibition.endDate?.slice(0, 10) || ''
+    const currentStartDate = toYmdString(currentExhibition.startDate)
+    const currentEndDate = toYmdString(currentExhibition.endDate)
     const shouldSyncUnavailableDates =
       currentExhibition.title !== body.title ||
-      currentStartDate !== body.startDate ||
-      currentEndDate !== body.endDate
+      currentStartDate !== startDate ||
+      currentEndDate !== endDate
     console.log('[exhibitions:PUT] current loaded', {
       id: body.id,
       shouldSyncUnavailableDates,
@@ -132,8 +139,8 @@ export async function PUT(request: NextRequest) {
     await updateRecord<ExhibitionRecord>('exhibitions', body.id, {
       title: body.title,
       description: body.description?.trim() || '',
-      startDate: body.startDate,
-      endDate: body.endDate,
+      startDate,
+      endDate,
       artists: body.artistIds || [],
       ...(body.clearMainImage ? { legacyImageUrl: '' } : {}),
       ...(body.imageUrl ? { legacyImageUrl: body.imageUrl } : {}),
@@ -159,7 +166,7 @@ export async function PUT(request: NextRequest) {
 
     if (shouldSyncUnavailableDates) {
       await deleteExhibitionUnavailableDates(body.id, token)
-      await createExhibitionUnavailableDates(body.id, body.title, body.startDate, body.endDate, token)
+      await createExhibitionUnavailableDates(body.id, body.title, startDate, endDate, token)
       console.log('[exhibitions:PUT] unavailable dates synced', {
         id: body.id,
         elapsedMs: Date.now() - startedAt,

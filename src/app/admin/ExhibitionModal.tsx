@@ -162,6 +162,10 @@ function generateTempId(): string {
   return `temp-${Date.now()}-${tempIdCounter}`
 }
 
+function toDateInputValue(value: string | null | undefined) {
+  return value?.match(/\d{4}-\d{2}-\d{2}/)?.[0] || ''
+}
+
 export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExhibition, artists }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -194,8 +198,8 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     if (editingExhibition) {
       setTitle(editingExhibition.title)
       setDescription(editingExhibition.description || '')
-      setStartDate(editingExhibition.startDate ? editingExhibition.startDate.split('T')[0] : '')
-      setEndDate(editingExhibition.endDate ? editingExhibition.endDate.split('T')[0] : '')
+      setStartDate(toDateInputValue(editingExhibition.startDate))
+      setEndDate(toDateInputValue(editingExhibition.endDate))
       setPreview(editingExhibition.imageUrl)
       setClearMainImage(false)
       const artistIds = editingExhibition.artists?.map(ea => ea.artistId) || []
