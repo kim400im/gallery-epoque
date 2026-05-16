@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Upload, Loader2, Plus, Trash2, GripVertical } from 'lucide-react'
-import { uploadImageToStorage } from '@/lib/supabase/storage'
+import { uploadImageToStorage } from '@/lib/pocketbase/storage'
 import {
   DndContext,
   closestCenter,

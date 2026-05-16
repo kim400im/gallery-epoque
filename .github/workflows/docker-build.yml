@@ -31,5 +31,3 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:latest
           build-args: |
             NEXT_PUBLIC_POCKETBASE_URL=${{ secrets.NEXT_PUBLIC_POCKETBASE_URL }}
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
