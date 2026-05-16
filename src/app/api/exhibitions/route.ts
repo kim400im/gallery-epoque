@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const startedAt = Date.now()
   try {
     const token = requireAuthToken(request)
     if (!token) return unauthorized()
@@ -89,15 +90,32 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID, title, and dates are required' }, { status: 400 })
     }
 
+    console.log('[exhibitions:PUT] start', {
+      id: body.id,
+      hasImageUrl: Boolean(body.imageUrl),
+      clearMainImage: Boolean(body.clearMainImage),
+      additionalImages: body.additionalImages?.length || 0,
+      deleteImageIds: body.deleteImageIds?.length || 0,
+    })
+
     const currentExhibition = await getExhibition(body.id)
     const shouldSyncUnavailableDates =
       currentExhibition.title !== body.title ||
       toYmd(currentExhibition.startDate) !== body.startDate ||
       toYmd(currentExhibition.endDate) !== body.endDate
+    console.log('[exhibitions:PUT] current loaded', {
+      id: body.id,
+      shouldSyncUnavailableDates,
+      elapsedMs: Date.now() - startedAt,
+    })
 
     for (const imageId of body.deleteImageIds || []) {
       await deleteRecord('exhibition_images', imageId, token)
     }
+    console.log('[exhibitions:PUT] extra images deleted', {
+      id: body.id,
+      elapsedMs: Date.now() - startedAt,
+    })
 
     for (const item of body.existingImageOrder || []) {
       await updateRecord('exhibition_images', item.id, {
@@ -105,6 +123,10 @@ export async function PUT(request: NextRequest) {
         description: body.existingImageDescriptions?.[item.id]?.trim() || '',
       }, token)
     }
+    console.log('[exhibitions:PUT] extra images reordered', {
+      id: body.id,
+      elapsedMs: Date.now() - startedAt,
+    })
 
     await updateRecord<ExhibitionRecord>('exhibitions', body.id, {
       title: body.title,
@@ -115,6 +137,10 @@ export async function PUT(request: NextRequest) {
       ...(body.clearMainImage ? { legacyImageUrl: '' } : {}),
       ...(body.imageUrl ? { legacyImageUrl: body.imageUrl } : {}),
     }, token)
+    console.log('[exhibitions:PUT] exhibition updated', {
+      id: body.id,
+      elapsedMs: Date.now() - startedAt,
+    })
 
     for (let i = 0; i < (body.additionalImages || []).length; i++) {
       const image = body.additionalImages![i]
@@ -125,13 +151,26 @@ export async function PUT(request: NextRequest) {
         legacyImageUrl: image.url,
       }, token)
     }
+    console.log('[exhibitions:PUT] new extra images created', {
+      id: body.id,
+      elapsedMs: Date.now() - startedAt,
+    })
 
     if (shouldSyncUnavailableDates) {
       await deleteExhibitionUnavailableDates(body.id, token)
       await createExhibitionUnavailableDates(body.id, body.title, body.startDate, body.endDate, token)
+      console.log('[exhibitions:PUT] unavailable dates synced', {
+        id: body.id,
+        elapsedMs: Date.now() - startedAt,
+      })
     }
 
-    return NextResponse.json(await getExhibition(body.id))
+    const exhibition = await getExhibition(body.id)
+    console.log('[exhibitions:PUT] complete', {
+      id: body.id,
+      elapsedMs: Date.now() - startedAt,
+    })
+    return NextResponse.json(exhibition)
   } catch (error) {
     console.error('Failed to update exhibition:', error)
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to update exhibition' }, { status: 500 })

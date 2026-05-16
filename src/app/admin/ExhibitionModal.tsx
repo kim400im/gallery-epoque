@@ -390,11 +390,15 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
         body.clearMainImage = clearMainImage && !image
       }
 
+      const controller = new AbortController()
+      const timeoutId = window.setTimeout(() => controller.abort(), 30000)
+
       const response = await fetch('/api/exhibitions', {
         method: isEditMode ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      })
+        signal: controller.signal,
+      }).finally(() => window.clearTimeout(timeoutId))
 
       if (!response.ok) {
         const data = await response.json()
@@ -405,7 +409,10 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       onSuccess(exhibition)
       handleClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : `전시회 ${isEditMode ? '수정' : '등록'}에 실패했습니다.`)
+      const message = err instanceof Error && err.name === 'AbortError'
+        ? `전시회 ${isEditMode ? '수정' : '등록'} 요청이 30초를 초과했습니다. 서버 로그를 확인해주세요.`
+        : err instanceof Error ? err.message : `전시회 ${isEditMode ? '수정' : '등록'}에 실패했습니다.`
+      setError(message)
     } finally {
       setLoading(false)
     }
