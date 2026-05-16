@@ -78,6 +78,7 @@ export async function PUT(request: NextRequest) {
       artistIds?: string[]
       additionalImages?: { url: string; description?: string }[]
       deleteImageIds?: string[]
+      clearMainImage?: boolean
       existingImageDescriptions?: Record<string, string>
       existingImageOrder?: { id: string; displayOrder: number }[]
       newImageStartOrder?: number
@@ -104,6 +105,7 @@ export async function PUT(request: NextRequest) {
       startDate: body.startDate,
       endDate: body.endDate,
       artists: body.artistIds || [],
+      ...(body.clearMainImage ? { legacyImageUrl: '' } : {}),
       ...(body.imageUrl ? { legacyImageUrl: body.imageUrl } : {}),
     }, token)
 

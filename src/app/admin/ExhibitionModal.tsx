@@ -170,6 +170,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
   const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([])
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [clearMainImage, setClearMainImage] = useState(false)
   const [imageItems, setImageItems] = useState<ImageItem[]>([])
   const [deleteImageIds, setDeleteImageIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -195,6 +196,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       setStartDate(editingExhibition.startDate ? editingExhibition.startDate.split('T')[0] : '')
       setEndDate(editingExhibition.endDate ? editingExhibition.endDate.split('T')[0] : '')
       setPreview(editingExhibition.imageUrl)
+      setClearMainImage(false)
       const artistIds = editingExhibition.artists?.map(ea => ea.artistId) || []
       setSelectedArtistIds(artistIds)
       const sortedImages = [...(editingExhibition.images || [])].sort(
@@ -217,6 +219,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     const file = e.target.files?.[0]
     if (file) {
       setImage(file)
+      setClearMainImage(false)
       const reader = new FileReader()
       reader.onloadend = () => {
         setPreview(reader.result as string)
@@ -384,6 +387,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
         }))
 
         body.newImageStartOrder = existingItems.length
+        body.clearMainImage = clearMainImage && !image
       }
 
       const response = await fetch('/api/exhibitions', {
@@ -415,6 +419,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setSelectedArtistIds([])
     setImage(null)
     setPreview(null)
+    setClearMainImage(false)
     setImageItems([])
     setDeleteImageIds([])
     setError(null)
@@ -578,7 +583,11 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
                   type="button"
                   onClick={() => {
                     setImage(null)
-                    setPreview(isEditMode ? editingExhibition?.imageUrl || null : null)
+                    setPreview(null)
+                    setClearMainImage(isEditMode)
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
                   }}
                   className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
                 >
