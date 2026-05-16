@@ -7,6 +7,7 @@ import {
   deleteExhibitionUnavailableDates,
   getExhibition,
   getExhibitions,
+  toYmd,
 } from '@/lib/pocketbase-data'
 
 export async function GET() {
@@ -88,6 +89,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'ID, title, and dates are required' }, { status: 400 })
     }
 
+    const currentExhibition = await getExhibition(body.id)
+    const shouldSyncUnavailableDates =
+      currentExhibition.title !== body.title ||
+      toYmd(currentExhibition.startDate) !== body.startDate ||
+      toYmd(currentExhibition.endDate) !== body.endDate
+
     for (const imageId of body.deleteImageIds || []) {
       await deleteRecord('exhibition_images', imageId, token)
     }
@@ -119,8 +126,11 @@ export async function PUT(request: NextRequest) {
       }, token)
     }
 
-    await deleteExhibitionUnavailableDates(body.id, token)
-    await createExhibitionUnavailableDates(body.id, body.title, body.startDate, body.endDate, token)
+    if (shouldSyncUnavailableDates) {
+      await deleteExhibitionUnavailableDates(body.id, token)
+      await createExhibitionUnavailableDates(body.id, body.title, body.startDate, body.endDate, token)
+    }
+
     return NextResponse.json(await getExhibition(body.id))
   } catch (error) {
     console.error('Failed to update exhibition:', error)
