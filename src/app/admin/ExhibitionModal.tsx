@@ -348,18 +348,10 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setSubmitStatus('저장 준비 중...')
 
     try {
-      const timeoutAt = Date.now() + 30000
-      const ensureNotTimedOut = () => {
-        if (Date.now() > timeoutAt) {
-          throw new Error(`전시회 ${isEditMode ? '수정' : '등록'} 요청이 30초를 초과했습니다. 서버 요청 전 단계에서 멈췄습니다.`)
-        }
-      }
-
       let imageUrl: string | undefined
       if (image) {
         setSubmitStatus('대표 이미지 업로드 중...')
         imageUrl = await uploadImageToStorage(image, 'exhibitions')
-        ensureNotTimedOut()
       }
 
       const newItems = imageItems.filter((item) => item.type === 'new')
@@ -374,7 +366,6 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             description: item.description,
           }))
       )
-      ensureNotTimedOut()
 
       const body: Record<string, unknown> = {
         title,
@@ -408,15 +399,11 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       }
 
       setSubmitStatus('서버에 전시 정보 저장 요청 중...')
-      const controller = new AbortController()
-      const timeoutId = window.setTimeout(() => controller.abort(), 30000)
-
       const response = await fetch('/api/exhibitions', {
         method: isEditMode ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: controller.signal,
-      }).finally(() => window.clearTimeout(timeoutId))
+      })
 
       if (!response.ok) {
         const data = await response.json()
@@ -428,9 +415,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       onSuccess(exhibition)
       handleClose()
     } catch (err) {
-      const message = err instanceof Error && err.name === 'AbortError'
-        ? `전시회 ${isEditMode ? '수정' : '등록'} 요청이 30초를 초과했습니다. 서버 로그를 확인해주세요.`
-        : err instanceof Error ? err.message : `전시회 ${isEditMode ? '수정' : '등록'}에 실패했습니다.`
+      const message = err instanceof Error ? err.message : `전시회 ${isEditMode ? '수정' : '등록'}에 실패했습니다.`
       setError(message)
     } finally {
       setLoading(false)
