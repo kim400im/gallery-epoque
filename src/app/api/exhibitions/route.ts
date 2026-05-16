@@ -7,7 +7,6 @@ import {
   deleteExhibitionUnavailableDates,
   getExhibition,
   getExhibitions,
-  toYmd,
 } from '@/lib/pocketbase-data'
 
 export async function GET() {
@@ -99,10 +98,12 @@ export async function PUT(request: NextRequest) {
     })
 
     const currentExhibition = await getExhibition(body.id)
+    const currentStartDate = currentExhibition.startDate?.slice(0, 10) || ''
+    const currentEndDate = currentExhibition.endDate?.slice(0, 10) || ''
     const shouldSyncUnavailableDates =
       currentExhibition.title !== body.title ||
-      toYmd(currentExhibition.startDate) !== body.startDate ||
-      toYmd(currentExhibition.endDate) !== body.endDate
+      currentStartDate !== body.startDate ||
+      currentEndDate !== body.endDate
     console.log('[exhibitions:PUT] current loaded', {
       id: body.id,
       shouldSyncUnavailableDates,
