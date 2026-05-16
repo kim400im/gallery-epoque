@@ -1,12 +1,26 @@
 const MAX_IMAGE_DIMENSION = 2800
 const WEBP_QUALITY = 0.82
+const COMPRESSION_TIMEOUT_MS = 45 * 1000
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs)
+    promise
+      .then(resolve, reject)
+      .finally(() => window.clearTimeout(timeoutId))
+  })
+}
 
 async function compressImageToWebp(file: File): Promise<File> {
   if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/webp') {
     return file
   }
 
-  const bitmap = await createImageBitmap(file)
+  const bitmap = await withTimeout(
+    createImageBitmap(file),
+    COMPRESSION_TIMEOUT_MS,
+    `Image compression timed out. Uploading original file instead: ${file.name}`
+  )
   const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height))
   const width = Math.max(1, Math.round(bitmap.width * scale))
   const height = Math.max(1, Math.round(bitmap.height * scale))
@@ -24,9 +38,13 @@ async function compressImageToWebp(file: File): Promise<File> {
   context.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
 
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY)
-  })
+  const blob = await withTimeout(
+    new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY)
+    }),
+    COMPRESSION_TIMEOUT_MS,
+    `Image compression timed out. Uploading original file instead: ${file.name}`
+  )
 
   if (!blob || blob.size >= file.size) return file
 
@@ -35,7 +53,13 @@ async function compressImageToWebp(file: File): Promise<File> {
 }
 
 export async function uploadImageToStorage(file: File, folder: string): Promise<string> {
-  const uploadFile = await compressImageToWebp(file)
+  let uploadFile = file
+  try {
+    uploadFile = await compressImageToWebp(file)
+  } catch (error) {
+    console.warn(error)
+    uploadFile = file
+  }
   const formData = new FormData()
   formData.append('file', uploadFile)
   formData.append('folder', folder)
