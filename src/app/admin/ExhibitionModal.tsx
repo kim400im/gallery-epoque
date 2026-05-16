@@ -175,6 +175,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
   const [deleteImageIds, setDeleteImageIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const additionalFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -340,16 +341,27 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
 
     setLoading(true)
     setError(null)
+    setSubmitStatus('저장 준비 중...')
 
     try {
+      const timeoutAt = Date.now() + 30000
+      const ensureNotTimedOut = () => {
+        if (Date.now() > timeoutAt) {
+          throw new Error(`전시회 ${isEditMode ? '수정' : '등록'} 요청이 30초를 초과했습니다. 서버 요청 전 단계에서 멈췄습니다.`)
+        }
+      }
+
       let imageUrl: string | undefined
       if (image) {
+        setSubmitStatus('대표 이미지 업로드 중...')
         imageUrl = await uploadImageToStorage(image, 'exhibitions')
+        ensureNotTimedOut()
       }
 
       const newItems = imageItems.filter((item) => item.type === 'new')
       const existingItems = imageItems.filter((item) => item.type === 'existing')
 
+      setSubmitStatus(newItems.length > 0 ? '추가 이미지 업로드 중...' : '전시 정보 저장 중...')
       const uploadedAdditionalImages = await Promise.all(
         newItems
           .filter((item) => item.file)
@@ -358,6 +370,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
             description: item.description,
           }))
       )
+      ensureNotTimedOut()
 
       const body: Record<string, unknown> = {
         title,
@@ -390,6 +403,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
         body.clearMainImage = clearMainImage && !image
       }
 
+      setSubmitStatus('서버에 전시 정보 저장 요청 중...')
       const controller = new AbortController()
       const timeoutId = window.setTimeout(() => controller.abort(), 30000)
 
@@ -405,6 +419,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
         throw new Error(data.error || `전시회 ${isEditMode ? '수정' : '등록'}에 실패했습니다.`)
       }
 
+      setSubmitStatus('저장 결과 반영 중...')
       const exhibition = await response.json()
       onSuccess(exhibition)
       handleClose()
@@ -415,6 +430,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
       setError(message)
     } finally {
       setLoading(false)
+      setSubmitStatus(null)
     }
   }
 
@@ -430,6 +446,7 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
     setImageItems([])
     setDeleteImageIds([])
     setError(null)
+    setSubmitStatus(null)
     onClose()
   }
 
@@ -673,6 +690,12 @@ export default function ExhibitionModal({ isOpen, onClose, onSuccess, editingExh
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {submitStatus && (
+            <div className="p-3 bg-[#7c8d4c]/10 border border-[#7c8d4c]/30 rounded-lg">
+              <p className="text-[#ccc5b9] text-sm">{submitStatus}</p>
             </div>
           )}
 
