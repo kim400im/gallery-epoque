@@ -27,6 +27,11 @@ export default function LoginPage() {
       return
     }
 
+    const data = await response.json() as { token?: string }
+    if (data.token) {
+      sessionStorage.setItem('pb_auth_token', data.token)
+    }
+
     window.location.assign('/admin')
   }
 

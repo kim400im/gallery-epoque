@@ -13,16 +13,27 @@ function fileUrl(baseUrl: string, record: MediaFileRecord) {
 }
 
 export async function uploadImageToStorage(file: File, folder: string): Promise<string> {
-  const tokenResponse = await fetch('/api/auth/upload-token', {
-    method: 'POST',
-  })
+  let token = ''
+  let pocketbaseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL || ''
 
-  if (!tokenResponse.ok) {
-    const data = await tokenResponse.json().catch(() => ({}))
-    throw new Error(data.error || 'Failed to prepare upload')
+  token = sessionStorage.getItem('pb_auth_token') || ''
+
+  if (!token || !pocketbaseUrl) {
+    const tokenResponse = await fetch('/api/auth/upload-token', {
+      method: 'POST',
+    })
+
+    if (!tokenResponse.ok) {
+      const data = await tokenResponse.json().catch(() => ({}))
+      throw new Error(data.error || 'Failed to prepare upload')
+    }
+
+    const uploadToken = await tokenResponse.json() as UploadTokenResponse
+    token = uploadToken.token
+    pocketbaseUrl = uploadToken.pocketbaseUrl
+    sessionStorage.setItem('pb_auth_token', token)
   }
 
-  const { token, pocketbaseUrl } = await tokenResponse.json() as UploadTokenResponse
   const baseUrl = pocketbaseUrl.replace(/\/$/, '')
 
   const formData = new FormData()
