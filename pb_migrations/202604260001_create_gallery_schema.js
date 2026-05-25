@@ -28,7 +28,7 @@ migrate((app) => {
       { type: "file", name: "image", maxSelect: 1, maxSize: 52428800, mimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_artists_legacy_id ON artists (legacyId)",
+      "CREATE UNIQUE INDEX idx_artists_legacy_id ON artists (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -48,7 +48,7 @@ migrate((app) => {
       { type: "file", name: "image", maxSelect: 1, maxSize: 52428800, mimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_artist_images_legacy_id ON artist_images (legacyId)",
+      "CREATE UNIQUE INDEX idx_artist_images_legacy_id ON artist_images (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -71,7 +71,7 @@ migrate((app) => {
       { type: "file", name: "image", maxSelect: 1, maxSize: 104857600, mimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_exhibitions_legacy_id ON exhibitions (legacyId)",
+      "CREATE UNIQUE INDEX idx_exhibitions_legacy_id ON exhibitions (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -92,7 +92,7 @@ migrate((app) => {
       { type: "file", name: "image", maxSelect: 1, maxSize: 104857600, mimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_exhibition_images_legacy_id ON exhibition_images (legacyId)",
+      "CREATE UNIQUE INDEX idx_exhibition_images_legacy_id ON exhibition_images (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -114,7 +114,7 @@ migrate((app) => {
       { type: "file", name: "image", maxSelect: 1, maxSize: 104857600, mimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_home_images_legacy_id ON home_images (legacyId)",
+      "CREATE UNIQUE INDEX idx_home_images_legacy_id ON home_images (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -137,7 +137,7 @@ migrate((app) => {
       { type: "bool", name: "isRead" },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_bookings_legacy_id ON bookings (legacyId)",
+      "CREATE UNIQUE INDEX idx_bookings_legacy_id ON bookings (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -157,7 +157,7 @@ migrate((app) => {
       { type: "number", name: "viewCount", onlyInt: true },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_notices_legacy_id ON notices (legacyId)",
+      "CREATE UNIQUE INDEX idx_notices_legacy_id ON notices (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -179,7 +179,7 @@ migrate((app) => {
       { type: "file", name: "file", maxSelect: 1, maxSize: 104857600 },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_notice_attachments_legacy_id ON notice_attachments (legacyId)",
+      "CREATE UNIQUE INDEX idx_notice_attachments_legacy_id ON notice_attachments (legacyId) WHERE legacyId != ''",
     ],
   }));
 
@@ -200,7 +200,7 @@ migrate((app) => {
       { type: "text", name: "legacyExhibitionId", max: 64 },
     ],
     indexes: [
-      "CREATE UNIQUE INDEX idx_unavailable_dates_legacy_id ON unavailable_dates (legacyId)",
+      "CREATE UNIQUE INDEX idx_unavailable_dates_legacy_id ON unavailable_dates (legacyId) WHERE legacyId != ''",
       "CREATE UNIQUE INDEX idx_unavailable_dates_date ON unavailable_dates (date)",
     ],
   }));
